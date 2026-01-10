@@ -1,70 +1,199 @@
-# Getting Started with Create React App
+Project Portal – Full Stack Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A production-grade full-stack web application built to manage employee project submissions, certificate uploads, and managerial approvals with secure authentication and automated email workflows.
 
-## Available Scripts
+This project simulates a real-world internal corporate system, focusing on backend robustness, clean separation of concerns, and role-based workflows.
 
-In the project directory, you can run:
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+🚀 Features
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+🔐 Authentication & Security
 
-### `npm test`
+JWT-based authentication
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Secure login and logout
 
-### `npm run build`
+Forgot password and reset password via email
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Protected API routes
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+👥 Role-Based Access Control
 
-### `npm run eject`
+Employee
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Upload projects and certificates
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Edit and re-submit rejected projects
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Track approval status
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
 
-## Learn More
+Manager
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Review submitted projects
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Approve or reject with remarks
 
-### Code Splitting
+Trigger automated email notifications
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
 
-### Analyzing the Bundle Size
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+---
 
-### Making a Progressive Web App
+📁 Project & Certificate Management
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Project file uploads with metadata
 
-### Advanced Configuration
+TCIL certificate uploads and management
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Detailed certificate information view
 
-### Deployment
+Project lifecycle tracking: Pending / Approved / Rejected
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
-### `npm run build` fails to minify
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
+
+📊 Dashboard Capabilities
+
+Search projects by name or keyword
+
+Filter projects by status
+
+Sort by date or status
+
+Export data to Excel:
+
+Filtered project data
+
+Complete project dataset
+
+
+
+
+---
+
+📧 Email Automation
+
+Password reset emails
+
+Project approval and rejection notifications
+
+SMTP-based email handling using Flask-Mail
+
+
+
+---
+
+🛠️ Tech Stack
+Frontend
+
+Library: React.js
+
+Styling: Bootstrap 5
+
+Deployment: Render (Static Site)
+
+Backend
+
+Framework: Flask (Python)
+
+Auth: Flask-JWT-Extended
+
+
+Deployment: Render (Web Service)
+
+Database
+
+Engine: PostgreSQL 16
+
+Hosting: Supabase
+
+---
+
+
+🔄 Application Workflow
+
+1. User logs in using JWT authentication
+
+
+2. Employee uploads project or certificate
+
+
+3. Manager reviews submission
+
+
+4. Manager approves or rejects the submission
+
+
+5. Automated email notification is sent
+
+
+6. Employee views updated project status
+
+
+
+
+---
+
+🔍 Engineering Challenges Addressed
+
+Secure JWT-based authentication
+
+Role-based authorization logic
+
+CORS handling with credentialed requests
+
+Email-driven workflows
+
+File uploads and structured storage
+
+Dynamic Excel export based on filters
+
+
+
+---
+
+📈 Future Enhancements
+
+Pagination and performance optimization
+
+Asynchronous background jobs
+
+Audit logs and activity tracking
+
+Admin-level access control
+
+Cloud-based file storage
+
+
+
+---
+
+
+🎯 Project Objective
+
+The goal of this project was to:
+
+Build a realistic full-stack system, not a demo app
+
+Apply secure authentication and authorization patterns
+
+Design scalable backend architecture
+
+Implement real-world approval workflows
+
+
+
+---
+
+👤 Author
+
+Ishpreet Kaur
+B.Tech Computer Science & Engineering
+
+
+---
