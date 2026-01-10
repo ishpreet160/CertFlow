@@ -3,7 +3,7 @@ from datetime import datetime
 
 db = SQLAlchemy()
 from werkzeug.security import generate_password_hash, check_password_hash
-from .extensions  import db
+from extensions  import db
 def set_password(self, password):
     self.password = generate_password_hash(password)
 
@@ -38,7 +38,7 @@ class Upload(db.Model):
    
 
 
-from .extensions import db
+from extensions import db
 from datetime import datetime
 
 class Certificate(db.Model):
