@@ -5,7 +5,7 @@ load_dotenv()
 
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:Laddu%40123@localhost:5433/portal_db'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:Laddu@123#$@db.deumcuhnnkypvqpflelw.supabase.co:5432/postgres'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = 'your-secret-key'  
     JWT_IDENTITY_CLAIM = "identity"
