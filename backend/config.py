@@ -5,7 +5,7 @@ load_dotenv()
 
 
 class Config:
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres.deumcuhnnkypvqpflelw:[YOUR-PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///local.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = 'your-secret-key'  
     JWT_IDENTITY_CLAIM = "identity"
