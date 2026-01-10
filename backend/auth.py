@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token
-from .models import db, User
+from models import db, User
 from werkzeug.security import generate_password_hash
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
@@ -47,10 +47,9 @@ def login():
 
     return jsonify(message='Invalid email or password'), 401
 
-#  Ping route to test if blueprint is active
 @auth_bp.route('/ping')
 def ping():
-    return jsonify(message='auth blueprint is active ✅')
+    return jsonify(message='auth blueprint is active ')
 
 
 
