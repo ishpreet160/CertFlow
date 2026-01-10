@@ -3,10 +3,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_mail import Mail
-from .config import Config  
-from .extensions import db, jwt, mail
-from .routes import routes_bp
-from .auth import auth_bp
+from config import Config  
+from extensions import db, jwt, mail
+from routes import routes_bp
+from auth import auth_bp
 
 def create_app():
 
@@ -30,7 +30,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(routes_bp, url_prefix='/api')
     
-    # Test route to verify server works
+    
     @app.route("/")
     def home():
         return {"message": "Welcome to the Project Portal Backend "}
@@ -39,7 +39,7 @@ def create_app():
 
 
 
-# Only run if this file is executed directly
+
 if __name__ == "__main__":
     app = create_app()
     app.run(debug=True, port=5000)
