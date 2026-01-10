@@ -5,6 +5,11 @@ A production-grade full-stack web application built to manage employee project s
 This project simulates a real-world internal corporate system, focusing on backend robustness, clean separation of concerns, and role-based workflows.
 
 ---
+## 🔗 Live Demo
+
+* **Frontend Application:** [View Live Site](https://tcil-frontend.onrender.com)
+* **Backend API:** [API Endpoint](https://tcil-backend.onrender.com)
+Note: The backend is hosted on a free tier; please allow up to 60 seconds for the server to "wake up" on the first request.
 
 ## 🚀 Features
 
