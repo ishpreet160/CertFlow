@@ -1,24 +1,21 @@
 import os
 from flask import Blueprint, jsonify, request, send_from_directory,jsonify
 from flask import current_app
-
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from .models import TCILCertificate
-from .decorators import role_required
+from models import TCILCertificate, db, Upload, Certificate, User
+from decorators import role_required
 from werkzeug.utils import secure_filename
-from .models import db, Upload, Certificate, User
 from flask_mail import Message
-from .extensions import mail
+from extensions import mail
 
 from werkzeug.security import check_password_hash
 from flask_jwt_extended import create_access_token
 
 routes_bp = Blueprint('routes', __name__, url_prefix='/api')
 
-# 💬 A simple test route
 @routes_bp.route('/ping', methods=['GET'])
 def ping():
-    return jsonify(message='Server is up and running! 🚀')
+    return jsonify(message='Server is up and running! ')
 
 
 
@@ -40,7 +37,7 @@ def profile():
 @routes_bp.route('/manager-only', methods=['GET'])
 @role_required(['manager', 'admin'])
 def only_managers():
-    return jsonify(message="Hello, Manager or Admin! ✅")
+    return jsonify(message="Hello, Manager or Admin! ")
 
 @routes_bp.route('/upload', methods=['POST','OPTIONS'])
 @jwt_required()
