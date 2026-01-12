@@ -21,10 +21,8 @@ def register_user():
     if User.query.filter_by(email=email).first():
         return jsonify(message="Email already registered"), 400
 
-    new_user = User(name=name, email=email, role=role)
-    new_user.password = generate_password_hash(password)
-
-
+    new_user = User(name=name, email=email, role=role, password_hash=generate_password_hash(password))
+#added password inside new_user    
     db.session.add(new_user)
     db.session.commit()
 

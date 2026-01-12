@@ -1,12 +1,6 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
-db = SQLAlchemy()
 from werkzeug.security import generate_password_hash, check_password_hash
-from extensions  import db
-def set_password(self, password):
-    self.password = generate_password_hash(password)
-
+from extensions import db  
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -16,6 +10,9 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
     role = db.Column(db.String(20), nullable=False) 
+
+    # Relationships
+    uploads = db.relationship('Upload', backref='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -31,24 +28,16 @@ class Upload(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    
+    # One-to-One Relationships
     tcil_certificate = db.relationship('TCILCertificate', back_populates='upload', uselist=False)
     certificate = db.relationship('Certificate', back_populates='upload', uselist=False)
-
-   
-
-
-from extensions import db
-from datetime import datetime
 
 class Certificate(db.Model):
     __tablename__ = 'certificates'
 
     id = db.Column(db.Integer, primary_key=True)
-
     upload_id = db.Column(db.Integer, db.ForeignKey('uploads.id')) 
-    upload = db.relationship('Upload', back_populates='certificate')
-
+    
     title = db.Column(db.String(200), nullable=False)
     client = db.Column(db.String(100), nullable=False)
     nature_of_project = db.Column(db.String(100), nullable=True)
@@ -68,25 +57,22 @@ class Certificate(db.Model):
     client_contact_email = db.Column(db.String(120), nullable=True)
     filename = db.Column(db.String(256), nullable=False)
     status = db.Column(db.String(20), default='pending')
-    upload = db.relationship("Upload", uselist=False, back_populates="certificate")
-
+    
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationships
+    upload = db.relationship("Upload", back_populates="certificate")
     user = db.relationship('User', backref='certificates')
-
-
 
 class TCILCertificate(db.Model):
     __tablename__ = 'tcil_certificates'
 
-  
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     valid_from = db.Column(db.Date, nullable=False)
     valid_till = db.Column(db.Date, nullable=False)
     pdf_path = db.Column(db.Text, nullable=False)
-   
 
     upload_id = db.Column(db.Integer, db.ForeignKey('uploads.id'))
     upload = db.relationship('Upload', back_populates='tcil_certificate')
