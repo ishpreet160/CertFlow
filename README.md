@@ -25,7 +25,7 @@ Note: The backend is hosted on a free tier; please allow up to 60 seconds for th
 * Edit and re-submit rejected projects
 * Track approval status
 
-#### **Manager**
+#### **Manager**/**Admin**
 * Review submitted projects
 * Approve or reject with remarks
 * Trigger automated email notifications
