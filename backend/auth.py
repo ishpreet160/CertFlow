@@ -30,8 +30,8 @@ def register_user():
 
 # Login route
 @auth_bp.route('/login', methods=['POST'])
+
 def login():
-   
     data = request.get_json()
 
     email = data.get('email')
@@ -40,11 +40,20 @@ def login():
     user = User.query.filter_by(email=email).first()
 
     if user and user.check_password(password):
+        # Create token with identity
         token = create_access_token(identity={'id': user.id, 'role': user.role})
-        return jsonify(access_token=token)
+        
+        # Returning both the token AND the user info
+        return jsonify({
+            'access_token': token,
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'role': user.role
+            }
+        }), 200
 
     return jsonify(message='Invalid email or password'), 401
-
 @auth_bp.route('/ping')
 def ping():
     return jsonify(message='auth blueprint is active ')
