@@ -12,32 +12,33 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setMessage(""); // Clear old messages
+    setMessage("");
 
     try {
-      // Logic: Send email and password to the dynamic backend URL
-      // We don't need {withCredentials: true} here because it's already in axios.js
+      // Sending request to the backend
       const response = await api.post("/auth/login", {
         email: email,
         password: password,
       });
 
-      const token = response.data.access_token;
-      localStorage.setItem("token", token);
+      // 1. Destructure the updated response (must match backend's return)
+      const { access_token, user } = response.data; 
 
-      // Decoding the JWT to get user roles
-      const decoded = JSON.parse(atob(token.split(".")[1]));
-      localStorage.setItem("role", decoded.sub.role || decoded.identity.role);
+      // 2. Save session data to localStorage
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("role", user.role); 
 
       setMessage("Login successful!");
       
-      // Artificial delay to show success message before navigating
-      setTimeout(() => navigate("/dashboard"), 1000);
+      // 3. Force a refresh to update the NavBar's role-based links
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1000);
       
     } catch (error) {
       console.error("Login Error:", error);
-      // Capture specific error messages from your Flask backend
-      const errorMsg = error.response?.data?.msg || error.response?.data?.message || "Invalid email or password";
+      // Backend error message or default
+      const errorMsg = error.response?.data?.message || "Invalid email or password";
       setMessage(errorMsg);
     }
   };
@@ -47,7 +48,11 @@ function LoginPage() {
       <div className="login-card">
         <h2 className="text-center mb-3 fw-bold">Welcome Back</h2>
 
-        {message && <div className="alert alert-info py-1">{message}</div>}
+        {message && (
+          <div className={`alert ${message.includes("successful") ? "alert-success" : "alert-danger"} py-1`}>
+            {message}
+          </div>
+        )}
 
         <form onSubmit={handleLogin}>
           <div className="mb-3">
@@ -86,6 +91,9 @@ function LoginPage() {
           </div>
 
           <div className="text-end mb-3">
+            {/* Challenge: Ensure this route exists in App.js or update 
+              to match your backend URL if it's a direct link. 
+            */}
             <Link to="/forgot-password" id="forgot-link">
               Forgot Password?
             </Link>
