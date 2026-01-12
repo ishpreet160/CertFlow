@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from '../axios'; // This uses your dynamic baseURL configuration
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/login.css";
 
@@ -12,23 +12,33 @@ function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setMessage(""); // Clear old messages
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
-      }, {withCredentials: true});
+      // Logic: Send email and password to the dynamic backend URL
+      // We don't need {withCredentials: true} here because it's already in axios.js
+      const response = await api.post("/auth/login", {
+        email: email,
+        password: password,
+      });
 
       const token = response.data.access_token;
       localStorage.setItem("token", token);
 
+      // Decoding the JWT to get user roles
       const decoded = JSON.parse(atob(token.split(".")[1]));
-      localStorage.setItem("role", decoded.identity.role);
+      localStorage.setItem("role", decoded.sub.role || decoded.identity.role);
 
       setMessage("Login successful!");
-      navigate("/dashboard");
+      
+      // Artificial delay to show success message before navigating
+      setTimeout(() => navigate("/dashboard"), 1000);
+      
     } catch (error) {
-      console.error(error);
-      setMessage("Invalid email or password");
+      console.error("Login Error:", error);
+      // Capture specific error messages from your Flask backend
+      const errorMsg = error.response?.data?.msg || error.response?.data?.message || "Invalid email or password";
+      setMessage(errorMsg);
     }
   };
 
@@ -41,9 +51,7 @@ function LoginPage() {
 
         <form onSubmit={handleLogin}>
           <div className="mb-3">
-            <label htmlFor="email" className="form-label">
-              Email
-            </label>
+            <label htmlFor="email" className="form-label">Email</label>
             <input
               type="email"
               className="form-control input-small"
@@ -56,9 +64,7 @@ function LoginPage() {
           </div>
 
           <div className="mb-2">
-            <label htmlFor="password" className="form-label">
-              Password
-            </label>
+            <label htmlFor="password" className="form-label">Password</label>
             <div className="input-group">
               <input
                 type={showPassword ? "text" : "password"}
@@ -80,7 +86,7 @@ function LoginPage() {
           </div>
 
           <div className="text-end mb-3">
-            <Link to="/forgot-password" className="forgot-link">
+            <Link to="/forgot-password" id="forgot-link">
               Forgot Password?
             </Link>
           </div>
