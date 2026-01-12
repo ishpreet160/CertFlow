@@ -14,7 +14,7 @@ def create_app():
     app.config.from_object(Config)
 
     CORS(app,
-     resources={r"/api/*": {"origins": ["http://localhost:3000","https://tcil-frontend.onrender.com"]}},
+     resources={r"/api/*": {"origins": "https://tcil-frontend.onrender.com"}},
      supports_credentials=True,
      expose_headers=["Content-Disposition", "Authorization"],
      allow_headers=["Content-Type", "Authorization"])
