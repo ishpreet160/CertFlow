@@ -82,19 +82,44 @@ function UploadPage() {
       });
       setSelectedFile(null);
     } catch (error) {
-      console.error(error);
-      setMessage(error.response?.data?.message || '❗ An error occurred while uploading.');
+      console.error("Full Error Object:", error); // for F12 console
+
+      // 1. Check if the backend sent a specific error message
+      if (error.response) {
+        const status = error.response.status;
+        const backendMsg = error.response.data?.message || error.response.data?.msg;
+
+        if (status === 401) {
+          setMessage("❌ Session Expired. Please log in again.");
+        } else if (status === 413) {
+          setMessage("❌ File too large. Maximum limit is 5MB.");
+        } else {
+          setMessage(`❌ Server Error: ${backendMsg || 'Upload failed'}`);
+        }
+      } 
+
+      // 2.request was made but no response was received (Network/CORS)
+      else if (error.request) {
+        setMessage("❌ Network Error: Could not reach the backend. Check if the server is awake.");
+      } 
+
+      // 3. Something else happened in setting up the request
+      else {
+        setMessage(`❌ System Error: ${error.message}`);
+      }
     } finally {
       setLoading(false);
-    }
-  };
+    }};
 
   return (
     <div className="container mt-4 mb-5">
       <h2 className="text-center text-primary mb-4">Upload Project Experience Certificate</h2>
 
-      {message && <div className="alert alert-info text-center">{message}</div>}
-
+      {message && (
+  <div className={`alert ${message.includes('❌') || message.includes('error') ? 'alert-danger' : 'alert-success'} text-center shadow-sm`}>
+    {message}
+  </div>
+)}
       <form onSubmit={handleSubmit} encType="multipart/form-data">
         <div className="row">
           {[

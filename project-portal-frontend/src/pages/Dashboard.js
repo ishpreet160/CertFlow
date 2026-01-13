@@ -37,14 +37,16 @@ function Dashboard() {
   const handleUpdate = async (id, newStatus) => {
     try {
       await api.patch(`/certificates/${id}/status`, { status: newStatus });
-      setMessage(`Certificate ${newStatus} successfully.`);
-      setTimeout(() => {
-        setMessage('');
-        window.location.reload();
-      }, 2000);
+      
+      // Update local state immediately so the badge changes color instantly
+      setCertificates(prev => 
+        prev.map(cert => cert.id === id ? { ...cert, status: newStatus } : cert)
+      );
+      
+      setMessage(`✅ Certificate ${newStatus} successfully.`);
+      setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setMessage('Failed to update status.');
-      console.error(err);
+      setMessage('❌ Failed to update status.');
     }
   };
 
@@ -60,49 +62,35 @@ function Dashboard() {
       return new Date(b.uploaded_on) - new Date(a.uploaded_on);
     });
 
+//fixed localhost to api
   const handlePreview = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/certificates/${id}/file`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const response = await fetch(`/certificates/${id}/file`, {
+        responseType: 'blob'
       });
 
-      if (!response.ok) throw new Error('Failed to load file');
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(response.data);
       window.open(url, '_blank');
     } catch (err) {
-      alert('Preview failed.');
-      console.error(err);
+      alert('Preview failed.The file might be missing on the server.');
     }
   };
 
   const handleDownload = async (certId) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/certificates/${certId}/download`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const response = await api.get(`/certificates/${certId}/download`, {
+        responseType: 'blob'
       });
 
-      if (!response.ok) throw new Error("Failed to download file");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-
+      const url = window.URL.createObjectURL(response.data);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'certificate.pdf');
+      link.setAttribute('download', `certificate_${certId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      console.error("Download failed:", error);
       alert("Download failed.");
     }
   };
