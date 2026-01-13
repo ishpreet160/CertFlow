@@ -34,22 +34,30 @@ function Dashboard() {
     fetchCertificates();
   }, []);
 
-  const handleUpdate = async (id, newStatus) => {
-    try {
-      await api.patch(`/certificates/${id}/status`, { status: newStatus });
-      
-      // Update local state immediately so the badge changes color instantly
-      setCertificates(prev => 
-        prev.map(cert => cert.id === id ? { ...cert, status: newStatus } : cert)
-      );
-      
-      setMessage(`✅ Certificate ${newStatus} successfully.`);
-      setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setMessage('❌ Failed to update status.');
-    }
-  };
+const handleUpdate = async (id, newStatus) => {
+  try {
+    
+    console.log(`Updating Cert ID: ${id} to ${newStatus}`);
 
+    const res = await api.patch(`/certificates/${id}/status`, { 
+      status: newStatus 
+    });
+    
+    // SUCCESS: UI changes color instantly
+    setCertificates(prev => 
+      prev.map(cert => cert.id === id ? { ...cert, status: newStatus } : cert)
+    );
+    
+    setMessage(`✅ Success: Certificate ${newStatus}`);
+    setTimeout(() => setMessage(''), 3000);
+
+  } catch (err) {
+    
+    const backendError = err.response?.data?.message || "Server rejected the request.";
+    console.error("Full Backend Rejection:", err.response?.data);
+    setMessage(`❌ Error 400: ${backendError}`);
+  }
+};
   const filteredCertificates = certificates
     .filter(cert =>
       (filterStatus === 'all' || cert.status === filterStatus) &&
@@ -64,18 +72,19 @@ function Dashboard() {
 
 //fixed localhost to api
   const handlePreview = async (id) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/certificates/${id}/file`, {
-        responseType: 'blob'
-      });
+  try {
+    
+    const response = await api.get(`/certificates/${id}/file`, {
+      responseType: 'blob'
+    });
 
-      const url = URL.createObjectURL(response.data);
-      window.open(url, '_blank');
-    } catch (err) {
-      alert('Preview failed.The file might be missing on the server.');
-    }
-  };
+    const url = URL.createObjectURL(response.data);
+    window.open(url, '_blank');
+  } catch (err) {
+    console.error("Preview Error:", err.response?.data || err.message);
+    alert('Preview failed. The server might be down or the file is missing.');
+  }
+};
 
   const handleDownload = async (certId) => {
     try {
