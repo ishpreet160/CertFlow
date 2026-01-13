@@ -162,18 +162,7 @@ def upload_certificate():
     db.session.add(cert)
     db.session.commit()
     # Send real-time confirmation email to the employee
-    user = User.query.get(identity['id'])
 
-    if user and user.email:
-     msg = Message(
-        subject="Certificate Submission Successful",
-        recipients=[user.email],
-        body=f"Hello {user.name},\n\n"
-             f"Your certificate '{title}' has been successfully submitted for review.\n"
-             f"We'll notify you once it's approved or rejected.\n\n"
-             "Thank you,\nProject Experience Portal"
-     )
-    mail.send(msg)
     return jsonify(message='Certificate uploaded successfully'), 201
 
     
@@ -230,54 +219,29 @@ def get_pending_certificates():
 @jwt_required()
 @role_required(['manager', 'admin'])
 def update_certificate_status(cert_id):
-     
-    if request.method == 'OPTIONS':
-        return '', 200
-    # ✅ 1. Find cert
+    # 1. Find cert
     cert = Certificate.query.get(cert_id)
     if not cert:
         return jsonify(message="Certificate not found"), 404
 
-    # ✅ 2. Already approved? Disallow change
-    if cert.status == 'approved':
-        return jsonify(message="Already approved. Cannot modify."), 400
+    # 2. Prevent redundant updates
+    if cert.status == 'approved' and request.get_json().get('status') == 'approved':
+        return jsonify(message="Already approved."), 400
 
-    # ✅ 3. Get JSON body
-    try:
-        data = request.get_json(force=True)
-    except Exception:
-        return jsonify(message="Invalid JSON body"), 400
-
-    if not data or 'status' not in data:
-        return jsonify(message="Missing 'status' in request body"), 400
-
+    # 3. Get JSON body
+    data = request.get_json(force=True)
     new_status = data.get('status')
 
-    # ✅ 4. Validate status value
+    # 4. Validate
     if new_status not in ['approved', 'rejected']:
-        return jsonify(message="Invalid status value. Must be 'approved' or 'rejected'."), 400
+        return jsonify(message="Invalid status value."), 400
 
-    # ✅ 5. Assign new status
+    # 5. Save change
     cert.status = new_status
     db.session.commit()
 
-    # ✅ 6. Email notification
-    try:
-        employee = User.query.get(cert.user_id)
-        if employee and employee.email:
-            msg = Message(
-                subject=f"Your Certificate was {new_status.capitalize()}",
-                recipients=[employee.email],
-                body=f"Hello {employee.name},\n\nYour certificate '{cert.title}' was {new_status}."
-            )
-            mail.send(msg)
-    except Exception as e:
-        print(f"MAIL ERROR: Email failed to send, but status was updated. Error: {e}")
-
-    return jsonify(message=f"Certificate {new_status} successfully")
-
-
-
+    # 6. Return Success immediately
+    return jsonify(message=f"Certificate {new_status} successfully"), 200
 
 @routes_bp.route('/certificates/<int:cert_id>', methods=['PATCH'])
 @jwt_required()
