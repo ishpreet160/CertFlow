@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import api from '../api/axios';
 import { useParams, useNavigate } from 'react-router-dom';
 
 function ResetPasswordPage() {
@@ -11,7 +12,7 @@ function ResetPasswordPage() {
   const handleReset = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, { password });
+      const res = await api.post(`/auth/reset-password/${token}`, { password });
       setMsg(res.data.msg);
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {

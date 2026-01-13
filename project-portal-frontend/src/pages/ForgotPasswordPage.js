@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+//import axios from 'axios';
+import api from '../api/axios';
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -8,7 +9,7 @@ function ForgotPasswordPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/forgot-password',
+      const res = await api.post('/auth/forgot-password',
         { email },
         {
           withCredentials: true,

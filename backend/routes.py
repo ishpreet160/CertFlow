@@ -1,6 +1,14 @@
 import os
-from flask import Blueprint, jsonify, request, send_from_directory,jsonify
 from flask import current_app
+BASE_DIR = os.path.abspath(os.path.dirname(__file__)) 
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+TCIL_FOLDER = os.path.join(UPLOAD_FOLDER, 'tcil_certificates')
+
+# Ensure these exist 
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TCIL_FOLDER, exist_ok=True)
+from flask import Blueprint, jsonify, request, send_from_directory,jsonify
+
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import TCILCertificate, db, Upload, Certificate, User
 from decorators import role_required
@@ -111,7 +119,7 @@ def upload_certificate():
         return jsonify(message='Empty filename'), 400
 
     filename = secure_filename(file.filename)
-    filepath = os.path.join('uploads', filename)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
 
     upload = Upload(filename=filename, filepath=filepath, user_id=identity["id"])
@@ -527,7 +535,7 @@ def preview_certificate(cert_id):
         print("File not found at:", file_path)
         return jsonify({'message': 'File not found'}), 404
 
-    return send_from_directory(UPLOAD_FOLDER, filename, mimetype='application/pdf')
+    return send_from_directory(UPLOAD_FOLDER, cert.filename, mimetype='application/pdf')
 
 
 
@@ -608,7 +616,9 @@ def forgot_password():
         expires_delta=timedelta(minutes=15)
     )
 
-    reset_url = f"http://localhost:3000/reset-password/{reset_token}"
+    # removed localhost here. Using Render Frontend URL.
+    frontend_url = "https://tcil-frontend.onrender.com" 
+    reset_url = f"{frontend_url}/reset-password/{reset_token}"
 
     msg = Message(
         subject="Password Reset Request",

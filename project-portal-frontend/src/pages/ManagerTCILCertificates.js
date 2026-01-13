@@ -21,7 +21,7 @@ function ManagerTCILCertificates() {
   const handleDownload = async (filename) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/tcil/certificates/${filename}`, {
+      const res = await fetch(`https://tcil-backend.onrender.com/api/tcil/certificates/${filename}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
