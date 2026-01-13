@@ -262,20 +262,19 @@ def update_certificate_status(cert_id):
     db.session.commit()
 
     # ✅ 6. Email notification
-    employee = User.query.get(cert.user_id)
-    if employee and employee.email:
-        msg = Message(
-            subject=f"Your Certificate was {new_status.capitalize()}",
-            recipients=[employee.email],
-            body=f"Hello {employee.name},\n\n"
-                 f"Your certificate titled '{cert.title}' has been {new_status} by the manager.\n\n"
-                 "Please login to the portal to view details.\n\n"
-                 "Thank you,\nProject Experience Portal"
-        )
-        mail.send(msg)
+    try:
+        employee = User.query.get(cert.user_id)
+        if employee and employee.email:
+            msg = Message(
+                subject=f"Your Certificate was {new_status.capitalize()}",
+                recipients=[employee.email],
+                body=f"Hello {employee.name},\n\nYour certificate '{cert.title}' was {new_status}."
+            )
+            mail.send(msg)
+    except Exception as e:
+        print(f"MAIL ERROR: Email failed to send, but status was updated. Error: {e}")
 
     return jsonify(message=f"Certificate {new_status} successfully")
-
 
 
 
