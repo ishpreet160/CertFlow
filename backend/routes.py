@@ -16,8 +16,9 @@ from werkzeug.utils import secure_filename
 from flask_mail import Message
 from extensions import mail
 
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token
+
 
 routes_bp = Blueprint('routes', __name__, url_prefix='/api')
 def get_upload_path():
@@ -575,7 +576,6 @@ def reset_password(token):
 
 from datetime import timedelta
 from flask_jwt_extended import create_access_token
-
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json(silent=True) or {}
@@ -586,14 +586,27 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     
-    # We return 200 regardless of whether the user exists for security.
-    # This stops the frontend from crashing.
     if user:
-        print(f"DEBUG: Password reset requested for {user.email}")
-        # Logic for real mail will go here once SMTP is fixed.
-    
+        reset_token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=30))
+        # Corrected production link
+        reset_link = f"https://tcil-frontend.onrender.com/reset-password/{reset_token}"
+        
+        msg = Message(
+            subject="Password Reset Request",
+            sender="ishpreetkgtbit@gmail.com",
+            recipients=[user.email],
+            body=f"Click the link to reset your password: {reset_link}"
+        )
+        
+        # YOU NEED THIS LINE OR NOTHING HAPPENS:
+        try:
+            mail.send(msg)
+            print(f"INFO: Reset email sent to {user.email}")
+        except Exception as e:
+            print(f"ERROR: SMTP delivery failed: {str(e)}")
+            # Don't return 500 here if you want to maintain the "security" of the 200 response
+            
     return jsonify(msg="If this email is registered, a reset link has been sent."), 200
-
 @routes_bp.route('/send-email', methods=['GET','POST'])
 def send_email():
     msg = Message(
@@ -619,3 +632,31 @@ def download_tcil_certificate(filename):
         return send_from_directory(folder, filename, as_attachment=True)
     except FileNotFoundError:
         return jsonify({'msg': 'File not found on server'}), 404
+    
+
+@routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
+def reset_password(token):
+    # This automatically verifies the token you sent in the email
+    try:
+        # We use decode_token manually if not using @jwt_required on the header
+        from flask_jwt_extended import decode_token
+        decoded_token = decode_token(token)
+        user_id = decoded_token['sub']
+    except Exception:
+        return jsonify(msg="The reset link is invalid or has expired."), 400
+
+    data = request.get_json()
+    new_password = data.get('password')
+
+    if not new_password or len(new_password) < 6:
+        return jsonify(msg="Password must be at least 6 characters long."), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify(msg="User not found."), 404
+
+    # Update and save the new password
+    user.password = generate_password_hash(new_password)
+    db.session.commit()
+
+    return jsonify(msg="Password has been reset successfully! Redirecting to login..."), 200

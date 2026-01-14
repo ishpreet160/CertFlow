@@ -100,7 +100,7 @@ function TCILUploadForm() {
         </div>
 
         <button className="btn btn-primary w-100 py-2 fw-bold" type="submit" disabled={loading}>
-          {loading ? "COMMUNICATING WITH SERVER..." : "UPLOAD NOW"}
+          {loading ? "CONNECTING..." : "UPLOAD NOW"}
         </button>
       </form>
     </div>
