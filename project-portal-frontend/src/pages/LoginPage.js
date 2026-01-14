@@ -8,11 +8,13 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false); // Added loading state
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage("");
+    setLoading(true); // START LOADING: Disable button and show spinner
 
     try {
       // Sending request to the backend
@@ -21,14 +23,14 @@ function LoginPage() {
         password: password,
       });
 
-      // 1. Destructure the updated response (must match backend's return)
+      // 1. Destructure the updated response
       const { access_token, user } = response.data; 
 
       // 2. Save session data to localStorage
       localStorage.setItem("token", access_token);
       localStorage.setItem("role", user.role); 
 
-      setMessage("Login successful!");
+      setMessage("Login successful! Redirecting...");
       
       // 3. Force a refresh to update the NavBar's role-based links
       setTimeout(() => {
@@ -37,9 +39,9 @@ function LoginPage() {
       
     } catch (error) {
       console.error("Login Error:", error);
-      // Backend error message or default
       const errorMsg = error.response?.data?.message || "Invalid email or password";
       setMessage(errorMsg);
+      setLoading(false); // STOP LOADING only on error so the user can try again
     }
   };
 
@@ -91,17 +93,32 @@ function LoginPage() {
           </div>
 
           <div className="text-end mb-3">
-            {/* Challenge: Ensure this route exists in App.js or update 
-              to match your backend URL if it's a direct link. 
-            */}
             <Link to="/forgot-password" id="forgot-link">
               Forgot Password?
             </Link>
           </div>
 
           <div className="text-center">
-            <button type="submit" className="btn btn-primary btn-sm w-50">
-              Login
+            {/* The button is disabled while loading to prevent duplicate requests.
+              The spinner is shown inside the button when loading is true.
+            */}
+            <button 
+              type="submit" 
+              className="btn btn-primary btn-sm w-50" 
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <span 
+                    className="spinner-border spinner-border-sm me-2" 
+                    role="status" 
+                    aria-hidden="true"
+                  ></span>
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </button>
           </div>
         </form>
