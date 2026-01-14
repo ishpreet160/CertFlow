@@ -15,9 +15,14 @@ function TCILUploadForm() {
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'pdf') {
-      setForm({ ...form, pdf: files[0] });
+    // FIX: Must destructure 'type' here to use it in the logic below
+    const { name, value, files, type } = e.target;
+
+    if (type === 'file') {
+      // Capture the actual File object, not an empty object
+      const selectedFile = files[0];
+      console.log("File selected:", selectedFile); 
+      setForm({ ...form, pdf: selectedFile });
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -28,9 +33,9 @@ function TCILUploadForm() {
     setMessage('');
     setError('');
 
-    // Pre-flight check: Prevents the 400 error from hitting the server
-    if (!form.pdf) {
-      setError("Please select a PDF file.");
+    // Pre-flight check: Ensure pdf is a real File instance
+    if (!(form.pdf instanceof File)) {
+      setError("Please select a valid PDF file.");
       return;
     }
 
@@ -40,18 +45,19 @@ function TCILUploadForm() {
     data.append('name', form.name);
     data.append('valid_from', form.valid_from);
     data.append('valid_till', form.valid_till);
-    data.append('pdf', form.pdf);
+    data.append('pdf', form.pdf); // Sending binary data now
 
     try {
       const response = await api.post('/tcil/upload', data);
-      setMessage(response.data.msg);
-      // Success: Redirect
+      setMessage(response.data.msg || 'Certificate uploaded successfully!');
+      
+      // Success: Clear form and redirect
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
-      // Capture the exact "Missing fields" message if it still occurs
-      const errorMsg = err.response?.data?.msg || 'Upload failed. Check console.';
+      // Catch specific backend error like "Missing fields" or "Invalid date"
+      const errorMsg = err.response?.data?.msg || 'Upload failed. Please try again.';
       setError(errorMsg);
-      console.error("Upload Error:", err.response?.data);
+      console.error("Upload Error Details:", err.response?.data);
     } finally {
       setLoading(false);
     }
@@ -67,27 +73,60 @@ function TCILUploadForm() {
       <form onSubmit={handleSubmit}>
         <div className="mb-3">
           <label className="fw-bold">Certificate Name</label>
-          <input type="text" name="name" className="form-control" onChange={handleChange} required />
+          <input 
+            type="text" 
+            name="name" 
+            className="form-control" 
+            placeholder="e.g. ISO 9001:2015"
+            onChange={handleChange} 
+            required 
+          />
         </div>
 
         <div className="row mb-3">
           <div className="col">
             <label className="fw-bold">Valid From</label>
-            <input type="date" name="valid_from" className="form-control" onChange={handleChange} required />
+            <input 
+              type="date" 
+              name="valid_from" 
+              className="form-control" 
+              onChange={handleChange} 
+              required 
+            />
           </div>
           <div className="col">
             <label className="fw-bold">Valid Till</label>
-            <input type="date" name="valid_till" className="form-control" onChange={handleChange} required />
+            <input 
+              type="date" 
+              name="valid_till" 
+              className="form-control" 
+              onChange={handleChange} 
+              required 
+            />
           </div>
         </div>
 
         <div className="mb-4">
           <label className="fw-bold">Upload PDF</label>
-          <input type="file" name="pdf" accept=".pdf" className="form-control" onChange={handleChange} required />
+          <input 
+            type="file" 
+            name="pdf" 
+            accept=".pdf" 
+            className="form-control" 
+            onChange={handleChange} 
+            required 
+          />
         </div>
 
-        <button className="btn btn-primary w-100" type="submit" disabled={loading}>
-          {loading ? "Uploading..." : "Upload Certificate"}
+        <button className="btn btn-primary w-100 py-2 fw-bold" type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              Uploading...
+            </>
+          ) : (
+            "Upload Certificate"
+          )}
         </button>
       </form>
     </div>
