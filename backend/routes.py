@@ -558,7 +558,7 @@ def forgot_password():
     
     if user:
         reset_token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=30))
-        # Corrected production link
+      
         reset_link = f"https://tcil-frontend.onrender.com/reset-password/{reset_token}"
         
         msg = Message(
@@ -568,14 +568,12 @@ def forgot_password():
             body=f"Click the link to reset your password: {reset_link}"
         )
         
-        # YOU NEED THIS LINE OR NOTHING HAPPENS:
         try:
             mail.send(msg)
             print(f"INFO: Reset email sent to {user.email}")
         except Exception as e:
             print(f"ERROR: SMTP delivery failed: {str(e)}")
-            # Don't return 500 here if you want to maintain the "security" of the 200 response
-            
+           
     return jsonify(msg="If this email is registered, a reset link has been sent."), 200
 @routes_bp.route('/send-email', methods=['GET','POST'])
 def send_email():
@@ -590,13 +588,10 @@ def send_email():
 
 
 
-
-
 @routes_bp.route('/tcil/certificates/<filename>', methods=['GET'])
 @jwt_required()
 @role_required(['manager', 'admin'])
 def download_tcil_certificate(filename):
-    # Use the same pathing function to retrieve
     folder = get_upload_path()
     try:
         return send_from_directory(folder, filename, as_attachment=True)
@@ -623,8 +618,8 @@ def reset_password(token):
     if not user:
         return jsonify(msg="User not found."), 404
 
-    # Update and save the new password
-    user.password = generate_password_hash(new_password)
+    # FIX: Use the method defined in your User model
+    user.set_password(new_password) 
     db.session.commit()
 
     return jsonify(msg="Password has been reset successfully! Redirecting..."), 200

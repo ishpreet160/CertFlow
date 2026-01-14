@@ -12,7 +12,6 @@ function ForgotPasswordPage() {
       const res = await api.post('/auth/forgot-password',
         { email },
         {
-          withCredentials: true,
           headers: { 'Content-Type': 'application/json' }
         }
       );
