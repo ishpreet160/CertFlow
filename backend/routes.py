@@ -544,36 +544,6 @@ def download_certificate(cert_id):
     return send_file(filepath, as_attachment=True)
 
 
-
-@routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
-def reset_password(token):
-    from flask_jwt_extended import decode_token
-    from werkzeug.security import generate_password_hash
-
-    try:
-        decoded = decode_token(token)
-        user_id = decoded['sub']['id']
-        user = User.query.get(user_id)
-
-        if not user:
-            return jsonify({"msg": "User not found"}), 404
-
-        data = request.get_json()
-        new_password = data.get('password')
-
-        if not new_password:
-            return jsonify({"msg": "Password required"}), 400
-
-        user.password_hash = generate_password_hash(new_password)
-        db.session.commit()
-
-        return jsonify({"msg": "Password reset successful"}), 200
-
-    except Exception as e:
-        return jsonify({"msg": f"Error: {str(e)}"}), 400
-
-
-
 from datetime import timedelta
 from flask_jwt_extended import create_access_token
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
@@ -636,9 +606,7 @@ def download_tcil_certificate(filename):
 
 @routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
 def reset_password(token):
-    # This automatically verifies the token you sent in the email
     try:
-        # We use decode_token manually if not using @jwt_required on the header
         from flask_jwt_extended import decode_token
         decoded_token = decode_token(token)
         user_id = decoded_token['sub']
@@ -659,4 +627,4 @@ def reset_password(token):
     user.password = generate_password_hash(new_password)
     db.session.commit()
 
-    return jsonify(msg="Password has been reset successfully! Redirecting to login..."), 200
+    return jsonify(msg="Password has been reset successfully! Redirecting..."), 200
