@@ -20,6 +20,10 @@ from werkzeug.security import check_password_hash
 from flask_jwt_extended import create_access_token
 
 routes_bp = Blueprint('routes', __name__, url_prefix='/api')
+def get_upload_path():
+    base = os.path.join(os.getcwd(), 'uploads', 'tcil_certificates')
+    os.makedirs(base, exist_ok=True)
+    return base
 
 @routes_bp.route('/ping', methods=['GET'])
 def ping():
@@ -353,19 +357,12 @@ tcil = Blueprint('tcil', __name__)
 
 UPLOAD_FOLDER = 'uploads/tcil_certificates'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-import os
-from datetime import datetime
-from flask import request, jsonify
-from werkzeug.utils import secure_filename
-from flask_jwt_extended import jwt_required, get_jwt_identity
-# ... other imports (db, Upload, TCILCertificate, etc.)
 
 @routes_bp.route('/tcil/upload', methods=['POST'])
 @jwt_required()
 def upload_tcil_certificate():
     user = get_jwt_identity()
     
-    # Challenge: Ensure only managers can upload
     if user['role'] != 'manager':
         return jsonify({'msg': 'Unauthorized: Manager role required'}), 403
 
@@ -375,11 +372,11 @@ def upload_tcil_certificate():
     valid_till_raw = request.form.get('valid_till')
     file = request.files.get('pdf')
 
-    # 2. Explicit Validation Check
+    # 2. Validation
     if not all([name, valid_from_raw, valid_till_raw, file]):
         return jsonify({'msg': 'Missing fields. Ensure name, dates, and PDF are provided.'}), 400
 
-    # 3. Smart Date Parsing to prevent 400 crashes
+    # 3. Date Parsing Logic
     def parse_date(date_str):
         for fmt in ('%Y-%m-%d', '%d-%m-%Y'):
             try:
@@ -392,29 +389,29 @@ def upload_tcil_certificate():
     v_till = parse_date(valid_till_raw)
 
     if not v_from or not v_till:
-        return jsonify({'msg': f'Invalid date format. Received: {valid_from_raw}'}), 400
+        return jsonify({'msg': f'Invalid date format. Expected YYYY-MM-DD.'}), 400
 
     try:
-        # 4. Save the File using consistent pathing
+        # 4. Save File using the Absolute Path function
         filename = secure_filename(file.filename)
-        # Ensure TCIL_FOLDER is defined globally in your file
-        path = os.path.join(TCIL_FOLDER, filename)
-        file.save(path)
+        save_path = get_upload_path()
+        full_filepath = os.path.join(save_path, filename)
+        file.save(full_filepath)
 
-        # 5. Database Transaction
+        # 5. Atomic Database Transaction
         new_upload = Upload(
             filename=filename,
-            filepath=path,
+            filepath=full_filepath,
             user_id=user['id']
         )
         db.session.add(new_upload)
-        db.session.flush() # Secure the ID before linking
+        db.session.flush() # Get the upload ID before committing
 
         cert = TCILCertificate(
             name=name,
             valid_from=v_from,
             valid_till=v_till,
-            pdf_path=path,
+            pdf_path=full_filepath,
             upload_id=new_upload.id 
         )
         db.session.add(cert)
@@ -424,10 +421,9 @@ def upload_tcil_certificate():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Server Error: {str(e)}") # Critical for Render logs
+        print(f"CRITICAL ERROR: {str(e)}")
         return jsonify({'msg': f'Internal Server Error: {str(e)}'}), 500
-    
-    
+
 @routes_bp.route('/tcil/certificates', methods=['GET'])
 @jwt_required()
 @role_required(['manager', 'admin'])  # restrict to manager/admin
@@ -615,14 +611,11 @@ def send_email():
 
 @routes_bp.route('/tcil/certificates/<filename>', methods=['GET'])
 @jwt_required()
-@role_required(['manager', 'admin'])  # Optional: Restrict to manager/admin
+@role_required(['manager', 'admin'])
 def download_tcil_certificate(filename):
-    folder = os.path.join(os.path.dirname(__file__), 'uploads', 'tcil_certificates')
+    # Use the same pathing function to retrieve
+    folder = get_upload_path()
     try:
         return send_from_directory(folder, filename, as_attachment=True)
     except FileNotFoundError:
-        return jsonify({'msg': 'File not found'}), 404
-
-
-
-
+        return jsonify({'msg': 'File not found on server'}), 404

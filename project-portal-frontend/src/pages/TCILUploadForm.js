@@ -11,7 +11,7 @@ function TCILUploadForm() {
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -27,24 +27,33 @@ function TCILUploadForm() {
     e.preventDefault();
     setMessage('');
     setError('');
-    setLoading(true); // Start loading
+
+    // Pre-flight check: Prevents the 400 error from hitting the server
+    if (!form.pdf) {
+      setError("Please select a PDF file.");
+      return;
+    }
+
+    setLoading(true);
 
     const data = new FormData();
     data.append('name', form.name);
     data.append('valid_from', form.valid_from);
     data.append('valid_till', form.valid_till);
-    data.append('pdf', form.pdf); // Key matches backend request.files.get('pdf')
+    data.append('pdf', form.pdf);
 
     try {
       const response = await api.post('/tcil/upload', data);
-      setMessage(response.data.msg || 'Certificate uploaded successfully!');
+      setMessage(response.data.msg);
+      // Success: Redirect
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
-      // Capture specific error message from backend
-      const errorMsg = err.response?.data?.msg || 'Upload failed. Please try again.';
+      // Capture the exact "Missing fields" message if it still occurs
+      const errorMsg = err.response?.data?.msg || 'Upload failed. Check console.';
       setError(errorMsg);
+      console.error("Upload Error:", err.response?.data);
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
   };
 
@@ -52,43 +61,34 @@ function TCILUploadForm() {
     <div className="container mt-5 p-4 shadow rounded bg-white" style={{ maxWidth: '600px' }}>
       <h2 className="text-center mb-4 text-primary">Upload TCIL Certificate</h2>
 
-      {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-danger">{error}</div>}
+      {message && <div className="alert alert-success text-center">{message}</div>}
+      {error && <div className="alert alert-danger text-center">{error}</div>}
 
       <form onSubmit={handleSubmit}>
-        <div className="form-group mb-3">
-          <label className="fw-semibold">Certificate Name</label>
-          <input type="text" name="name" className="form-control" placeholder="ISO 9001..." onChange={handleChange} required />
+        <div className="mb-3">
+          <label className="fw-bold">Certificate Name</label>
+          <input type="text" name="name" className="form-control" onChange={handleChange} required />
         </div>
 
-        <div className="row">
-          <div className="col-md-6 mb-3">
-            <label className="fw-semibold">Valid From</label>
+        <div className="row mb-3">
+          <div className="col">
+            <label className="fw-bold">Valid From</label>
             <input type="date" name="valid_from" className="form-control" onChange={handleChange} required />
           </div>
-          <div className="col-md-6 mb-3">
-            <label className="fw-semibold">Valid Till</label>
+          <div className="col">
+            <label className="fw-bold">Valid Till</label>
             <input type="date" name="valid_till" className="form-control" onChange={handleChange} required />
           </div>
         </div>
 
-        <div className="form-group mb-4">
-          <label className="fw-semibold">Upload PDF</label>
+        <div className="mb-4">
+          <label className="fw-bold">Upload PDF</label>
           <input type="file" name="pdf" accept=".pdf" className="form-control" onChange={handleChange} required />
         </div>
 
-        <div className="text-center">
-          <button className="btn btn-primary px-5 w-100" type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Processing...
-              </>
-            ) : (
-              "Upload Certificate"
-            )}
-          </button>
-        </div>
+        <button className="btn btn-primary w-100" type="submit" disabled={loading}>
+          {loading ? "Uploading..." : "Upload Certificate"}
+        </button>
       </form>
     </div>
   );
