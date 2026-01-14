@@ -353,51 +353,81 @@ tcil = Blueprint('tcil', __name__)
 
 UPLOAD_FOLDER = 'uploads/tcil_certificates'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+import os
+from datetime import datetime
+from flask import request, jsonify
+from werkzeug.utils import secure_filename
+from flask_jwt_extended import jwt_required, get_jwt_identity
+# ... other imports (db, Upload, TCILCertificate, etc.)
+
 @routes_bp.route('/tcil/upload', methods=['POST'])
 @jwt_required()
 def upload_tcil_certificate():
     user = get_jwt_identity()
+    
+    # Challenge: Ensure only managers can upload
     if user['role'] != 'manager':
-        return jsonify({'msg': 'Unauthorized'}), 403
+        return jsonify({'msg': 'Unauthorized: Manager role required'}), 403
 
+    # 1. Capture fields and file
     name = request.form.get('name')
-    valid_from = request.form.get('valid_from')
-    valid_till = request.form.get('valid_till')
+    valid_from_raw = request.form.get('valid_from')
+    valid_till_raw = request.form.get('valid_till')
     file = request.files.get('pdf')
 
-    if not all([name, valid_from, valid_till, file]):
-        return jsonify({'msg': 'All fields required'}), 400
+    # 2. Explicit Validation Check
+    if not all([name, valid_from_raw, valid_till_raw, file]):
+        return jsonify({'msg': 'Missing fields. Ensure name, dates, and PDF are provided.'}), 400
 
-    filename = secure_filename(file.filename)
-    # Use the absolute path defined at the top of your file
-    path = os.path.join(TCIL_FOLDER, filename)
-    file.save(path)
+    # 3. Smart Date Parsing to prevent 400 crashes
+    def parse_date(date_str):
+        for fmt in ('%Y-%m-%d', '%d-%m-%Y'):
+            try:
+                return datetime.strptime(date_str, fmt)
+            except (ValueError, TypeError):
+                continue
+        return None
 
-    # 1. Save metadata
-    new_upload = Upload(
-        filename=filename,
-        filepath=path,
-        user_id=user['id']
-    )
-    db.session.add(new_upload)
-    db.session.flush() # This gives us new_upload.id without finishing the transaction
+    v_from = parse_date(valid_from_raw)
+    v_till = parse_date(valid_till_raw)
 
-    # 2. Create the TCIL Cert linked to the upload
-    cert = TCILCertificate(
-        name=name,
-        valid_from=datetime.strptime(valid_from, '%Y-%m-%d'),
-        valid_till=datetime.strptime(valid_till, '%Y-%m-%d'),
-        pdf_path=path,
-        upload_id=new_upload.id 
-    )
-    db.session.add(cert)
+    if not v_from or not v_till:
+        return jsonify({'msg': f'Invalid date format. Received: {valid_from_raw}'}), 400
+
+    try:
+        # 4. Save the File using consistent pathing
+        filename = secure_filename(file.filename)
+        # Ensure TCIL_FOLDER is defined globally in your file
+        path = os.path.join(TCIL_FOLDER, filename)
+        file.save(path)
+
+        # 5. Database Transaction
+        new_upload = Upload(
+            filename=filename,
+            filepath=path,
+            user_id=user['id']
+        )
+        db.session.add(new_upload)
+        db.session.flush() # Secure the ID before linking
+
+        cert = TCILCertificate(
+            name=name,
+            valid_from=v_from,
+            valid_till=v_till,
+            pdf_path=path,
+            upload_id=new_upload.id 
+        )
+        db.session.add(cert)
+        db.session.commit()
+
+        return jsonify({'msg': 'TCIL Certificate uploaded successfully'}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Server Error: {str(e)}") # Critical for Render logs
+        return jsonify({'msg': f'Internal Server Error: {str(e)}'}), 500
     
-    # 3. Commit EVERYTHING at once
-    db.session.commit()
-
-    return jsonify({'msg': 'TCIL Certificate uploaded successfully'}), 201
-
-
+    
 @routes_bp.route('/tcil/certificates', methods=['GET'])
 @jwt_required()
 @role_required(['manager', 'admin'])  # restrict to manager/admin
@@ -552,7 +582,7 @@ from flask_jwt_extended import create_access_token
 
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     email = data.get('email')
     
     if not email:
@@ -563,7 +593,7 @@ def forgot_password():
     # We return 200 regardless of whether the user exists for security.
     # This stops the frontend from crashing.
     if user:
-        print(f"DEBUG: Password reset requested for {email}")
+        print(f"DEBUG: Password reset requested for {user.email}")
         # Logic for real mail will go here once SMTP is fixed.
     
     return jsonify(msg="If this email is registered, a reset link has been sent."), 200
