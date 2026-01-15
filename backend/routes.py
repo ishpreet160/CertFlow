@@ -545,16 +545,24 @@ def download_certificate(cert_id):
 
 import threading
 from datetime import timedelta
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
-# Helper function for background email sending
-def send_async_email(app, msg):
+def send_async_email(app, message_data):
     with app.app_context():
+        message = Mail(
+            from_email=app.config.get('MAIL_DEFAULT_SENDER'),
+            to_emails=message_data['to'],
+            subject=message_data['subject'],
+            plain_text_content=message_data['body']
+        )
+        
         try:
-            mail.send(msg)
-            print(f"INFO: Background SMTP success for {msg.recipients}")
+            sg = SendGridAPIClient(app.config.get('SENDGRID_API_KEY'))
+            response = sg.send(message)
+            print(f"INFO: SendGrid API Success: {response.status_code}")
         except Exception as e:
-            print(f"ERROR: Background SMTP failure: {str(e)}")
-
+            print(f"ERROR: SendGrid API Failure: {str(e)}")
 
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
@@ -566,38 +574,36 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     
-    #thread to avoid the 30s timeout
     if user:
+        from datetime import timedelta
+        from flask_jwt_extended import create_access_token
+        
         reset_token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=30))
         reset_link = f"https://tcil-frontend.onrender.com/reset-password/{reset_token}"
+    
+        message_data = {
+            "to": user.email,
+            "subject": "Password Reset Request",
+            "body": f"Click the link to reset your password: {reset_link}"
+        }
         
-        msg = Message(
-            subject="Password Reset Request",
-            sender=current_app.config.get('MAIL_USERNAME'), 
-            recipients=[user.email],
-            body=f"Click the link to reset your password: {reset_link}"
-        )
-        
-        # Start background thread to prevent Gunicorn WORKER TIMEOUT
         app = current_app._get_current_object()
-        threading.Thread(target=send_async_email, args=(app, msg)).start()
+        threading.Thread(target=send_async_email, args=(app, message_data)).start()
             
-    # Return 200 immediately so CORS headers are sent and the worker doesn't hang
     return jsonify(msg="If this email is registered, a reset link has been sent."), 200
 
 @routes_bp.route('/send-email', methods=['GET','POST'])
 def send_email():
-    msg = Message(
-        subject="Test Email from Flask",
-        sender=current_app.config.get('MAIL_USERNAME'),
-        recipients=["ishpreetkaurkamboj7@gmail.com"],
-        body="Hey, your Flask app just sent email!"
-    )
+    message_data = {
+        "to": "ishpreetkaurkamboj7@gmail.com",
+        "subject": "Test Email from Flask (SendGrid API)",
+        "body": "Hey, your Flask app just sent an email via the API!"
+    }
     
     app = current_app._get_current_object()
-    threading.Thread(target=send_async_email, args=(app, msg)).start()
+    threading.Thread(target=send_async_email, args=(app, message_data)).start()
     
-    return jsonify({"msg": "Email sending initiated in background!"})
+    return jsonify({"msg": "SendGrid API call initiated in background!"}), 200
 
 @routes_bp.route('/tcil/certificates/<filename>', methods=['GET'])
 @jwt_required()

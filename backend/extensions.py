@@ -3,5 +3,5 @@ from flask_jwt_extended import JWTManager
 from flask_mail import Mail
 
 db = SQLAlchemy()
-mail = Mail()
+#mail = Mail()
 jwt = JWTManager()
