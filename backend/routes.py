@@ -13,8 +13,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import TCILCertificate, db, Upload, Certificate, User
 from decorators import role_required
 from werkzeug.utils import secure_filename
-from flask_mail import Message
-from extensions import mail
+
 
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_jwt_extended import create_access_token

@@ -2,9 +2,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from flask_mail import Mail
 from config import Config  
-from extensions import db, jwt, mail
+from extensions import db, jwt
 from routes import routes_bp
 from auth import auth_bp
 
@@ -23,7 +22,7 @@ def create_app():
 
     db.init_app(app)
     jwt.init_app(app)
-    mail.init_app(app)
+    
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(routes_bp, url_prefix='/api')
