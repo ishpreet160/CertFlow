@@ -53,7 +53,7 @@ Note: The backend is hosted on a free tier; please allow up to 60 seconds for th
 ## 📧 Email Automation
 * **Password reset emails**
 * **Project approval and rejection notifications**
-* **SMTP-based email handling using Flask-Mail**
+* **Email by SendGrid API (Port 443)**
 
 ---
 
