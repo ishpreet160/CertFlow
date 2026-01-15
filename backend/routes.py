@@ -543,9 +543,19 @@ def download_certificate(cert_id):
 
     return send_file(filepath, as_attachment=True)
 
-
+import threading
 from datetime import timedelta
-from flask_jwt_extended import create_access_token
+
+# Helper function for background email sending
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+            print(f"INFO: Background SMTP success for {msg.recipients}")
+        except Exception as e:
+            print(f"ERROR: Background SMTP failure: {str(e)}")
+
+
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json(silent=True) or {}
@@ -556,37 +566,38 @@ def forgot_password():
 
     user = User.query.filter_by(email=email).first()
     
+    #thread to avoid the 30s timeout
     if user:
         reset_token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=30))
-      
         reset_link = f"https://tcil-frontend.onrender.com/reset-password/{reset_token}"
         
         msg = Message(
             subject="Password Reset Request",
-            sender="ishpreetkgtbit@gmail.com",
+            sender=current_app.config.get('MAIL_USERNAME'), 
             recipients=[user.email],
             body=f"Click the link to reset your password: {reset_link}"
         )
         
-        try:
-            mail.send(msg)
-            print(f"INFO: Reset email sent to {user.email}")
-        except Exception as e:
-            print(f"ERROR: SMTP delivery failed: {str(e)}")
-           
+        # Start background thread to prevent Gunicorn WORKER TIMEOUT
+        app = current_app._get_current_object()
+        threading.Thread(target=send_async_email, args=(app, msg)).start()
+            
+    # Return 200 immediately so CORS headers are sent and the worker doesn't hang
     return jsonify(msg="If this email is registered, a reset link has been sent."), 200
+
 @routes_bp.route('/send-email', methods=['GET','POST'])
 def send_email():
     msg = Message(
         subject="Test Email from Flask",
-        sender="ishpreetkgtbit@gmail.com",  # match config
-        recipients=["ishpreetkaurkamboj7@gmail.com"],  # test email
-        body="Hey queen, your Flask app just sent a real email!"
+        sender=current_app.config.get('MAIL_USERNAME'),
+        recipients=["ishpreetkaurkamboj7@gmail.com"],
+        body="Hey, your Flask app just sent email!"
     )
-    mail.send(msg)
-    return jsonify({"msg": "Email sent successfully!"})
-
-
+    
+    app = current_app._get_current_object()
+    threading.Thread(target=send_async_email, args=(app, msg)).start()
+    
+    return jsonify({"msg": "Email sending initiated in background!"})
 
 @routes_bp.route('/tcil/certificates/<filename>', methods=['GET'])
 @jwt_required()
