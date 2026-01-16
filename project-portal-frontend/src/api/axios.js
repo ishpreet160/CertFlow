@@ -7,10 +7,8 @@ const baseURL = isProduction
 
 const api = axios.create({
     baseURL: baseURL,
-    headers: {
-        //'Content-Type': 'application/json'
-    }
 });
+
 
 api.interceptors.request.use(
     (config) => {
@@ -23,11 +21,30 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// error handling 
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        console.error("API Error:", error.response?.data || error.message);
+        const status = error.response ? error.response.status : null;
+
+        if (status === 401) {
+            // specific error code check
+            const errorType = error.response.data?.error;
+            
+            if (errorType === 'token_expired' || errorType === 'token_invalid') {
+                console.warn("Session expired. Redirecting to login...");
+                localStorage.removeItem('token');
+                localStorage.removeItem('userRole');
+                // Force redirect to login page
+                window.location.href = '/login'; 
+            }
+        }
+
+        if (status === 403) {
+            alert("You do not have permission to perform this action. ❌");
+        }
+
+        console.error("API Error Detail:", error.response?.data || error.message);
         return Promise.reject(error);
     }
 );
