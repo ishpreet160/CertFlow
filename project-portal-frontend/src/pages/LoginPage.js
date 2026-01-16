@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import api from '../api/axios';
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/login.css";
@@ -8,31 +8,38 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false); // Added loading state
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  //  If the user is already authenticated, don't let them stay here.
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage("");
-    setLoading(true); // START LOADING: Disable button and show spinner
+    setLoading(true);
 
     try {
-      // Sending request to the backend
       const response = await api.post("/auth/login", {
         email: email,
         password: password,
       });
 
-      // 1. Destructure the updated response
       const { access_token, user } = response.data; 
 
-      // 2. Save session data to localStorage
       localStorage.setItem("token", access_token);
-      localStorage.setItem("role", user.role); 
+      localStorage.setItem("userRole", user.role); 
+      localStorage.setItem("userName", user.name);
 
-      setMessage("Login successful! Redirecting...");
+      setMessage("✅ Login successful! Redirecting...");
       
-      // 3. Force a refresh to update the NavBar's role-based links
+      // 2. The Clean Transition
+      // We use window.location.href to ensure the entire App state (including Navbar)
+      // re-reads the new localStorage values on load.
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1000);
@@ -40,30 +47,31 @@ function LoginPage() {
     } catch (error) {
       console.error("Login Error:", error);
       const errorMsg = error.response?.data?.message || "Invalid email or password";
-      setMessage(errorMsg);
-      setLoading(false); // STOP LOADING only on error so the user can try again
+      setMessage(`❌ ${errorMsg}`);
+      setLoading(false); 
     }
   };
 
   return (
     <div className="login-wrapper">
-      <div className="login-card">
-        <h2 className="text-center mb-3 fw-bold">Welcome Back</h2>
+      <div className="login-card shadow">
+        <h2 className="text-center mb-3 fw-bold text-primary">TCIL Portal</h2>
+        <p className="text-center text-muted small mb-4">Authorized Access Only</p>
 
         {message && (
-          <div className={`alert ${message.includes("successful") ? "alert-success" : "alert-danger"} py-1`}>
+          <div className={`alert ${message.includes("successful") ? "alert-success" : "alert-danger"} py-2 text-center small fw-bold`}>
             {message}
           </div>
         )}
 
         <form onSubmit={handleLogin}>
           <div className="mb-3">
-            <label htmlFor="email" className="form-label">Email</label>
+            <label htmlFor="email" className="form-label fw-semibold">Corporate Email</label>
             <input
               type="email"
-              className="form-control input-small"
+              className="form-control"
               id="email"
-              placeholder="Enter email"
+              placeholder="name@tcil.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -71,11 +79,11 @@ function LoginPage() {
           </div>
 
           <div className="mb-2">
-            <label htmlFor="password" className="form-label">Password</label>
+            <label htmlFor="password" className="form-label fw-semibold">Password</label>
             <div className="input-group">
               <input
                 type={showPassword ? "text" : "password"}
-                className="form-control input-small"
+                className="form-control"
                 id="password"
                 placeholder="Enter password"
                 value={password}
@@ -84,7 +92,7 @@ function LoginPage() {
               />
               <button
                 type="button"
-                className="btn btn-outline-secondary toggle-btn"
+                className="btn btn-outline-secondary"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? "Hide" : "Show"}
@@ -92,35 +100,26 @@ function LoginPage() {
             </div>
           </div>
 
-          <div className="text-end mb-3">
-            <Link to="/forgot-password" id="forgot-link">
+          <div className="text-end mb-4">
+            <Link to="/forgot-password" id="forgot-link" className="small text-decoration-none">
               Forgot Password?
             </Link>
           </div>
 
-          <div className="text-center">
-            {/* The button is disabled while loading to prevent duplicate requests.
-              The spinner is shown inside the button when loading is true.
-            */}
-            <button 
-              type="submit" 
-              className="btn btn-primary btn-sm w-50" 
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <span 
-                    className="spinner-border spinner-border-sm me-2" 
-                    role="status" 
-                    aria-hidden="true"
-                  ></span>
-                  Logging in...
-                </>
-              ) : (
-                "Login"
-              )}
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            className="btn btn-primary w-100 fw-bold py-2 shadow-sm" 
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                AUTHENTICATING...
+              </>
+            ) : (
+              "SIGN IN"
+            )}
+          </button>
         </form>
       </div>
     </div>
