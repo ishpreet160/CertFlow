@@ -1,42 +1,34 @@
+import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from config import Config  
-from extensions import db, jwt
-from routes import routes_bp
-from auth import auth_bp
+from extensions import db, jwt 
 
 def create_app():
-
     app = Flask(__name__)
-    app.config.from_object(Config)
+    
+    # Configuration
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+    app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY", "super-secret-key")
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    CORS(app,
-     resources={r"/api/*": {"origins": "https://tcil-frontend.onrender.com"}},
-     supports_credentials=True,
-     methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
-     expose_headers=["Content-Disposition", "Authorization"])
-
-
+    # Initialize Extensions
     db.init_app(app)
     jwt.init_app(app)
-    
+    CORS(app)
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(routes_bp, url_prefix='/api')
-    
-    
-    @app.route("/")
-    def home():
-        return {"message": "Welcome to the Project Portal Backend "}
+    with app.app_context():
+        # Import Blueprints inside context to avoid circularity
+        from routes import routes_bp
+        from auth import auth_bp
+        
+        app.register_blueprint(routes_bp)
+        app.register_blueprint(auth_bp)
+        
+        db.create_all()
 
     return app
 
-
-
-
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, port=5000)
+    #  0.0.0.0 to ensure it's accessible in Docker or Cloud environments
+    app.run(debug=True, host="0.0.0.0", port=5000)
