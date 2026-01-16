@@ -4,35 +4,23 @@ import api from '../api/axios';
 function ManagerTCILCertificates() {
   const [certificates, setCertificates] = useState([]);
   const [error, setError] = useState('');
+  const userRole = localStorage.getItem('userRole');
 
   useEffect(() => {
-    const fetchCertificates = async () => {
-      try {
-        const res = await api.get('/tcil/certificates');
-        setCertificates(res.data.certificates);
-      } catch (err) {
-        setError('Failed to fetch TCIL Certificates. Are you logged in as manager?');
-      }
-    };
-
-    fetchCertificates();
-  }, []);
+    if (userRole !== 'manager' && userRole !== 'admin') {
+       setError('Unauthorized Access.');
+       return;
+    }
+    api.get('/tcil/certificates')
+      .then(res => setCertificates(res.data.certificates))
+      .catch(() => setError('Failed to fetch certificates.'));
+  }, [userRole]);
 
   const handleDownload = async (filename) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`https://tcil-backend.onrender.com/api/tcil/certificates/${filename}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) {
-        throw new Error('Download failed');
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      //  authenticated axios instance instead of fetch
+      const res = await api.get(`/tcil/certificates/${filename}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
@@ -40,7 +28,7 @@ function ManagerTCILCertificates() {
       link.click();
       link.remove();
     } catch (err) {
-      alert('Download failed. Please check your login or permissions.');
+      alert('Download failed.');
     }
   };
 

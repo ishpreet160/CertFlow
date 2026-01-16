@@ -6,61 +6,29 @@ function EditCertificateForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    title: '',
-    client: '',
-    technologies: '',
-    project_status: '',
-    value: '',
-    file: null
+    title: '', client: '', technologies: '', project_status: '', value: '', file: null
   });
 
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-
   useEffect(() => {
-    // 🔁 Fetch existing cert details
     api.get(`/certificates/${id}`)
-      .then((res) => {
-        const data = res.data;
-        setForm({
-          title: data.title,
-          client: data.client,
-          technologies: data.technologies || '',
-          project_status: data.project_status || '',
-          value: data.value || '',
-          file: null
-        });
-      })
-      .catch(() => setError('Failed to load certificate'));
+      .then((res) => setForm({ ...res.data, file: null }))
+      .catch(() => alert('Failed to load certificate data.'));
   }, [id]);
 
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    if (name === 'file') {
-      setForm({ ...form, file: files[0] });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
-    data.append('title', form.title);
-    data.append('client', form.client);
-    data.append('technologies', form.technologies);
-    data.append('project_status', form.project_status);
-    data.append('value', form.value);
-    if (form.file) {
-      data.append('file', form.file);
-    }
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== null) data.append(key, value);
+    });
 
-    api.patch(`/certificates/${id}`, data)
-      .then(() => {
-        setMessage('Updated and Resent for approval!');
-        setTimeout(() => navigate('/dashboard'), 1500);
-      })
-      .catch(() => setError('Update failed.'));
+    try {
+      await api.patch(`/certificates/${id}`, data);
+      alert('Changes saved and resent for approval.');
+      navigate('/dashboard');
+    } catch (err) {
+      alert('Update failed.');
+    }
   };
 
   return (
