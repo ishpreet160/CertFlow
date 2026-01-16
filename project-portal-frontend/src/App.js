@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import NavBar from './components/NavBar';
 import ProtectedRoute from './ProtectedRoute';
-import HomePage from "./pages/HomePage";
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import UploadPage from './pages/UploadPage';
@@ -21,12 +20,23 @@ function App() {
       <NavBar />
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
+       
+        <Route path="/" element={<LoginPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        
+        {/* Public Password Recovery Routes */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         
+        {/* 
+            Only logged-in Admins/Managers should access this.
+        */}
+        <Route
+          path="/register"
+          element={<ProtectedRoute><RegisterPage /></ProtectedRoute>}
+        />
+
+        {/* Standard Protected Routes */}
         <Route
           path="/dashboard"
           element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
@@ -43,6 +53,8 @@ function App() {
           path="/certificates/edit/:id"
           element={<ProtectedRoute><EditCertificateForm /></ProtectedRoute>}
         />
+
+        {/* Manager-Only Restricted Routes */}
         <Route
           path="/tcil-upload"
           element={<ProtectedRoute><TCILUploadForm /></ProtectedRoute>}
@@ -51,8 +63,6 @@ function App() {
           path="/manager/tcil-certificates"
           element={<ProtectedRoute><ManagerTCILCertificates /></ProtectedRoute>}
         />
-
-        {/* Catch-all fallback route */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </div>
