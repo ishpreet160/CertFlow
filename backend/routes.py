@@ -200,3 +200,41 @@ def reset_password(token):
         db.session.commit()
         return jsonify(msg="Success")
     except: return jsonify(msg="Expired/Invalid"), 400
+
+
+@routes_bp.route('/certificates/all', methods=['GET'])
+@jwt_required()
+def get_all_certificates():
+    identity = get_jwt_identity()
+    user_id = identity['id']
+    role = identity['role']
+
+    # 1. ADMIN sees everything
+    if role == 'admin':
+        certs = Certificate.query.all()
+    
+    # 2. MANAGER sees their own + their team's certs
+    elif role == 'manager':
+        # Get IDs of all employees reporting to this manager
+        team_member_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
+        team_member_ids.append(user_id) # Include manager's own certs
+        certs = Certificate.query.filter(Certificate.user_id.in_(team_member_ids)).all()
+    
+    # 3. EMPLOYEE sees only their own
+    else:
+        certs = Certificate.query.filter_by(user_id=user_id).all()
+
+    # Manual serialization since we need to return a list
+    result = []
+    for c in certs:
+        result.append({
+            "id": c.id,
+            "title": c.title,
+            "client": c.client,
+            "status": c.status,
+            "filename": c.filename,
+            "timestamp": c.timestamp.isoformat() if hasattr(c, 'timestamp') and c.timestamp else None,
+            "user_id": c.user_id
+        })
+    
+    return jsonify(result), 200
