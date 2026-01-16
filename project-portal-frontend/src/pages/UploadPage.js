@@ -14,11 +14,10 @@ function UploadPage() {
     client_contact_phone: '', client_contact_email: '',
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleFileChange = (e) => {
+    setSelectedFile(e.target.files[0]);
   };
-
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFile) return setMessage('❗ Please select a PDF file.');
