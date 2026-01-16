@@ -6,20 +6,22 @@ import '../styles/dashboard.css';
 
 function Dashboard() {
   const [certificates, setCertificates] = useState([]);
-  const [role, setRole] = useState('');
+  const [role] = useState(localStorage.getItem('userRole') || ''); 
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCertificates = async () => {
       try {
-        const profileRes = await api.get('/profile');
-        const userRole = profileRes.data.role;
-        setRole(userRole);
-
-        const route = userRole === 'manager' ? '/certificates/all' : '/certificates';
+        setLoading(true);
+        // Admins and Managers use the 'all' route; Employees use their own.
+        const route = (role === 'manager' || role === 'admin') 
+          ? '/certificates/all' 
+          : '/certificates';
+          
         const certsRes = await api.get(route);
         const certList = Array.isArray(certsRes.data.certificates)
           ? certsRes.data.certificates
@@ -28,70 +30,45 @@ function Dashboard() {
         setCertificates(certList);
       } catch (err) {
         console.error('Error fetching certificates:', err);
+        setMessage('❌ Failed to load certificates.');
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCertificates();
-  }, []);
+    if (role) fetchCertificates();
+  }, [role]);
 
-const handleUpdate = async (id, newStatus) => {
-  try {
-    
-    console.log(`Updating Cert ID: ${id} to ${newStatus}`);
+  const handleUpdate = async (id, newStatus) => {
+    try {
+      
+      await api.patch(`/certificates/${id}/status`, { status: newStatus });
+      
+      setCertificates(prev => 
+        prev.map(cert => cert.id === id ? { ...cert, status: newStatus } : cert)
+      );
+      
+      setMessage(`✅ Certificate ${newStatus} successfully.`);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setMessage(`❌ Action failed: ${err.response?.data?.message || "Server Error"}`);
+    }
+  };
 
-    const res = await api.patch(`/certificates/${id}/status`, { 
-      status: newStatus 
-    });
-    
-    // SUCCESS: UI changes color instantly
-    setCertificates(prev => 
-      prev.map(cert => cert.id === id ? { ...cert, status: newStatus } : cert)
-    );
-    
-    setMessage(`✅ Success: Certificate ${newStatus}`);
-    setTimeout(() => setMessage(''), 3000);
-
-  } catch (err) {
-    
-    const backendError = err.response?.data?.message || "Server rejected the request.";
-    console.error("Full Backend Rejection:", err.response?.data);
-    setMessage(`❌ Error 400: ${backendError}`);
-  }
-};
-  const filteredCertificates = certificates
-    .filter(cert =>
-      (filterStatus === 'all' || cert.status === filterStatus) &&
-      (cert.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cert.client?.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-    .sort((a, b) => {
-      if (sortBy === 'title') return a.title.localeCompare(b.title);
-      if (sortBy === 'client') return a.client.localeCompare(b.client);
-      return new Date(b.uploaded_on) - new Date(a.uploaded_on);
-    });
-
-//fixed localhost to api
   const handlePreview = async (id) => {
-  try {
-    
-    const response = await api.get(`/certificates/${id}/file`, {
-      responseType: 'blob'
-    });
-
-    const url = URL.createObjectURL(response.data);
-    window.open(url, '_blank');
-  } catch (err) {
-    console.error("Preview Error:", err.response?.data || err.message);
-    alert('Preview failed. The server might be down or the file is missing.');
-  }
-};
+    try {
+      // Must use responseType 'blob' because the route is JWT protected.
+      const response = await api.get(`/certificates/${id}/file`, { responseType: 'blob' });
+      const url = URL.createObjectURL(response.data);
+      window.open(url, '_blank');
+    } catch (err) {
+      alert('Preview failed. File may be missing or access denied.');
+    }
+  };
 
   const handleDownload = async (certId) => {
     try {
-      const response = await api.get(`/certificates/${certId}/download`, {
-        responseType: 'blob'
-      });
-
+      const response = await api.get(`/certificates/${certId}/download`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(response.data);
       const link = document.createElement('a');
       link.href = url;
@@ -120,127 +97,120 @@ const handleUpdate = async (id, newStatus) => {
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
   };
 
+  const filteredCertificates = certificates
+    .filter(cert =>
+      (filterStatus === 'all' || cert.status === filterStatus) &&
+      (cert.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cert.client?.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .sort((a, b) => {
+      if (sortBy === 'title') return a.title.localeCompare(b.title);
+      if (sortBy === 'client') return a.client.localeCompare(b.client);
+      return new Date(b.uploaded_on) - new Date(a.uploaded_on);
+    });
+
   return (
     <div className="container-fluid px-4 py-5">
-      <h2 className="dashboard-heading">
-        {role === 'manager' ? 'Manager Dashboard' : 'Your Certificates'}
-      </h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2 className="dashboard-heading mb-0 text-primary fw-bold">
+          {role.toUpperCase()} DASHBOARD
+        </h2>
+        {/* Only Admins and Managers can see the user registration portal. */}
+        {(role === 'admin' || role === 'manager') && (
+          <Link to="/register" className="btn btn-primary shadow-sm">+ Register New User</Link>
+        )}
+      </div>
 
-      <div className="filter-panel d-flex flex-wrap gap-3 mb-3">
-        <div className="form-group">
-          <label className="form-label fw-semibold">Search:</label>
+      <div className="filter-panel d-flex flex-wrap gap-3 mb-4 p-3 bg-light rounded shadow-sm">
+        <div className="flex-grow-1">
+          <label className="form-label fw-bold">Search</label>
           <input
             type="text"
-            placeholder="Search by title/client"
+            placeholder="Title or Client..."
             className="form-control"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        <div className="form-group">
-          <label className="form-label fw-semibold">Filter Status:</label>
-          <select
-            className="form-select"
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-          >
-            <option value="all">All</option>
+        <div>
+          <label className="form-label fw-bold">Status</label>
+          <select className="form-select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+            <option value="all">All Statuses</option>
             <option value="approved">Approved</option>
             <option value="pending">Pending</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
 
-        <div className="form-group">
-          <label className="form-label fw-semibold">Sort By:</label>
-          <select
-            className="form-select"
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value)}
-          >
-            <option value="date">Date</option>
-            <option value="title">Title</option>
-            <option value="client">Client</option>
+        <div>
+          <label className="form-label fw-bold">Sort By</label>
+          <select className="form-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="date">Newest First</option>
+            <option value="title">Alphabetical (Title)</option>
+            <option value="client">Alphabetical (Client)</option>
           </select>
         </div>
 
-        <div className="d-flex align-items-end gap-2 ">
-
-          <button className="btn btn-outline-secondary  px-4  move-down me-2 " style={{ height: '38px'}}  onClick={() =>
-            exportToExcel(filteredCertificates, 'Filtered_Certificates')
-          }>
-             Export Filtered List
-          </button>
-
-          <button className="btn btn-outline-secondary px-4  move-down" style={{ height: '38px' }} onClick={() =>
-            exportToExcel(certificates, 'All_Certificates')
-          }>
-             Export To Excel
+        <div className="d-flex align-items-end gap-2">
+          <button className="btn btn-outline-success" onClick={() => exportToExcel(filteredCertificates, 'Filtered_Report')}>
+            Export Filtered
           </button>
         </div>
       </div>
 
-      {message && (
-        <div className="alert alert-info text-center fw-semibold mb-2" role="alert">
-          {message}
-        </div>
-      )}
+      {message && <div className="alert alert-info text-center fw-bold">{message}</div>}
 
-      <div className="table-container table-responsive">
-        {filteredCertificates.length === 0 ? (
-          <p className="text-muted text-center">No certificates match this filter.</p>
+      <div className="table-responsive bg-white rounded shadow-sm">
+        {loading ? (
+          <div className="text-center p-5"><div className="spinner-border text-primary"></div></div>
+        ) : filteredCertificates.length === 0 ? (
+          <p className="text-muted text-center p-5">No certificates found.</p>
         ) : (
-          <table className="table table-bordered table-striped align-middle">
+          <table className="table table-hover align-middle mb-0">
             <thead className="table-dark">
               <tr>
-                <th>S.No</th>
                 <th>Title</th>
                 <th>Client</th>
-                <th>Technologies</th>
-                <th>Start Date</th>
-                <th>End Date</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Uploaded</th>
+                <th className="text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredCertificates.map((cert, index) => (
+              {filteredCertificates.map((cert) => (
                 <tr key={cert.id}>
-                  <td>{index + 1}</td>
                   <td>
-                    <Link to={`/certificate/${cert.id}`} className="text-primary fw-bold text-decoration-none">
+                    <Link to={`/certificate/${cert.id}`} className="fw-bold text-decoration-none text-dark">
                       {cert.title}
                     </Link>
                   </td>
                   <td>{cert.client}</td>
-                  <td>{cert.technologies || '—'}</td>
-                  <td>{cert.start_date ? new Date(cert.start_date).toLocaleDateString() : '—'}</td>
-                  <td>{cert.end_date ? new Date(cert.end_date).toLocaleDateString() : '—'}</td>
                   <td>
-                    <span className={`badge text-capitalize ${
+                    <span className={`badge rounded-pill ${
                       cert.status === 'approved' ? 'bg-success' :
-                      cert.status === 'rejected' ? 'bg-danger' : 'bg-warning '
+                      cert.status === 'rejected' ? 'bg-danger' : 'bg-warning text-dark'
                     }`}>
                       {cert.status}
                     </span>
                   </td>
+                  <td>{new Date(cert.uploaded_on).toLocaleDateString()}</td>
                   <td>
-                    <div className="d-flex flex-wrap gap-2">
-                      <button className="btn btn-sm btn-outline-dark fw-semibold" onClick={() => handlePreview(cert.id)}>Preview</button>
-                      <button className="btn btn-sm btn-outline-dark fw-semibold" onClick={() => handleDownload(cert.id)}>Download</button>
+                    <div className="d-flex justify-content-center gap-2">
+                      <button className="btn btn-sm btn-light border" onClick={() => handlePreview(cert.id)}>Preview</button>
+                      <button className="btn btn-sm btn-light border" onClick={() => handleDownload(cert.id)}>Download</button>
 
+                      {/* Manager-only Approval Controls */}
                       {role === 'manager' && cert.status === 'pending' && (
                         <>
-                          <button className="btn btn-sm btn-outline-success" onClick={() => handleUpdate(cert.id, 'approved')}>Approve</button>
-                          <button className="btn btn-sm btn-outline-danger-reject" onClick={() => handleUpdate(cert.id, 'rejected')}>Reject</button>
+                          <button className="btn btn-sm btn-success" onClick={() => handleUpdate(cert.id, 'approved')}>Approve</button>
+                          <button className="btn btn-sm btn-danger" onClick={() => handleUpdate(cert.id, 'rejected')}>Reject</button>
                         </>
                       )}
 
-                      {role !== 'manager' && cert.status === 'rejected' && (
-                        <Link to={`/certificates/edit/${cert.id}`} className="btn btn-sm btn-outline-warning">
-                          Edit & Resubmit
-                        </Link>
+                      {/* Employee-only Edit for Rejected */}
+                      {role === 'employee' && cert.status === 'rejected' && (
+                        <Link to={`/certificates/edit/${cert.id}`} className="btn btn-sm btn-warning">Edit</Link>
                       )}
                     </div>
                   </td>
