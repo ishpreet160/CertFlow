@@ -1,4 +1,4 @@
-# CertFlow 🏢
+# CertFlow 
 **Enterprise Project & Certificate Governance Portal**
 
 CertFlow is a high-integrity, full-stack ecosystem designed to manage the lifecycle of corporate project submissions and employee certifications. This system replaces legacy manual tracking with an automated, role-based workflow, ensuring organizational compliance and data accessibility.
@@ -66,4 +66,4 @@ CertFlow ensures data privacy and organizational structure through strict access
 ---
 
 ## 👤 Author
-**Ishpreet Kaur** *B.Tech in Computer Science & Engineering* *Specializing in Full-Stack Development & Enterprise Systems*
+**Ishpreet Kaur** *B.Tech in Computer Science & Engineering* 
