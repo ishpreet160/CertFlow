@@ -43,19 +43,21 @@ function NavBar() {
         {(role === "manager" || role === "admin") && (
           <>
             <li className="nav-item">
-              <Link className="nav-link" to="/tcil-upload">Upload TCIL Certificates</Link>
-            </li>
-            <li className="nav-item">
               <Link className="nav-link" to="/register">Add Team Member</Link>
             </li>
           </>
         )}
 
+         <li className="nav-item">
+              <Link className="nav-link" to="/tcil-upload">Upload TCIL Certificates</Link>
+            </li>
+           
+
         <li className="nav-item ms-lg-3">
           <span className="navbar-text text-light me-3">
             Hi, <strong>{userName || 'User'}</strong> 
-            <span className="badge bg-primary ms-2">{role}</span>
-          </span>
+            <span className={`badge ms-2 ${role === 'admin' ? 'bg-danger' : 'bg-primary'}`}>{role}</span>
+        </span>
         </li>
         <li className="nav-item">
           <button className="btn btn-sm btn-outline-danger" onClick={handleLogout}>Logout</button>

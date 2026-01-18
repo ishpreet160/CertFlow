@@ -1,54 +1,65 @@
 import React, { useState } from 'react';
-//import axios from 'axios';
 import api from '../api/axios';
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleReset = async (e) => { 
     e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
     try {
-      const res = await api.post('/auth/forgot-password',
-        { email },
-        {
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-      setMessage(res.data.msg);
+      const res = await api.post('/auth/forgot-password', { email });
+
+      setMessage(res.data.message || '✅ Check your email for the reset link.');
     } catch (err) {
-      setMessage(err.response?.data?.msg || 'Something went wrong');
+      setMessage(err.response?.data?.message || '❌ Something went wrong. Try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-blue-700 mb-6">
-          🔐 Forgot Password
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <input
-            type="email"
-            placeholder="Enter your registered email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className=" block w-full px-4 p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-          />
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-black p-3 rounded hover:bg-blue-700 transition"
-          >
-            Send Reset Link
-          </button>
-        </form>
+    <div className="container d-flex align-items-center justify-content-center" style={{ minHeight: "80vh" }}>
+      <div className="card shadow-lg p-4 border-0" style={{ maxWidth: "400px", width: "100%", borderRadius: "15px" }}>
+        <h3 className="text-center fw-bold mb-3 text-primary">Reset Password</h3>
+        <p className="text-muted small text-center mb-4">
+          Enter your registered email to receive a secure recovery link.
+        </p>
 
         {message && (
-          <p className="mt-4 text-center text-black-600 font-medium">{message}</p>
+          <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-danger'} small text-center`}>
+            {message}
+          </div>
         )}
+
+        <form onSubmit={handleReset}>
+          <div className="mb-3">
+            <label className="form-label small fw-bold">Email Address</label>
+            <input
+              type="email"
+              className="form-control form-control-lg"
+              placeholder="name@tcil.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)} 
+              required
+            />
+          </div>
+          <button 
+            type="submit" 
+            className="btn btn-primary btn-lg w-100 fw-bold shadow-sm"
+            disabled={loading}
+          >
+            {loading ? 'SENDING...' : 'SEND RESET LINK'}
+          </button>
+        </form>
+        
+        <div className="text-center mt-4">
+          <a href="/login" className="text-decoration-none small fw-bold">Back to Login</a>
+        </div>
       </div>
     </div>
   );

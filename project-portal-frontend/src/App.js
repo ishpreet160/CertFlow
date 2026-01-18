@@ -43,6 +43,10 @@ function App() {
           element={<ProtectedRoute><UploadPage /></ProtectedRoute>}
         />
         <Route
+          path="/tcil-upload"
+          element={<ProtectedRoute><TCILUploadForm /></ProtectedRoute>}
+        />
+        <Route
           path="/certificate/:id"
           element={<ProtectedRoute><CertificateDetails /></ProtectedRoute>}
         />
@@ -52,10 +56,7 @@ function App() {
         />
 
         {/* Manager-Only Restricted Routes */}
-        <Route
-          path="/tcil-upload"
-          element={<ProtectedRoute><TCILUploadForm /></ProtectedRoute>}
-        />
+        
         <Route
           path="/manager/tcil-certificates"
           element={<ProtectedRoute><ManagerTCILCertificates /></ProtectedRoute>}

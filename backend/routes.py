@@ -61,22 +61,26 @@ def download_certificate(cert_id):
 @jwt_required()
 @role_required(['manager', 'admin'])
 def get_stats():
-    identity = get_jwt_identity()
     user_id = get_jwt_identity()
     claims = get_jwt()
     role = claims.get('role')
     if role == 'admin':
-        users_q = User.query.filter(User.role != 'admin')
+        user_count = User.query.count()
         certs_q = Certificate.query
-    else:
+    elif role == 'manager':
         sub_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
-        users_q = User.query.filter(User.id.in_(sub_ids))
         certs_q = Certificate.query.filter(Certificate.user_id.in_(sub_ids))
+        user_count = len(sub_ids)
+    else:
+        # Employee sees ONLY their own stats
+        certs_q = Certificate.query.filter_by(user_id=user_id)
+        user_count = 1
 
     return jsonify({
-        "total_team_members": users_q.count(),
         "total_uploads": certs_q.count(),
-        "pending_approvals": certs_q.filter_by(status='pending').count()
+        "pending_approvals": certs_q.filter_by(status='pending').count(),
+        "approved": certs_q.filter_by(status='approved').count(),
+        "team_size": user_count
     })
 
 # --- CERTIFICATE MANAGEMENT ---
@@ -182,6 +186,56 @@ def update_status(cert_id):
         
     return jsonify(message="Invalid status"), 400
 
+@routes_bp.route('/certificates/<int:cert_id>', methods=['PUT'])
+@jwt_required()
+def edit_certificate(cert_id):
+    user_id = get_jwt_identity()
+    cert = Certificate.query.get_or_404(cert_id)
+
+    # 1. Permission Check
+    if str(cert.user_id) != str(user_id):
+        return jsonify(message="Unauthorized"), 403
+    
+    # 2.  Lock if already approved
+    if cert.status == 'approved':
+        return jsonify(message="Approved certificates cannot be edited"), 400
+
+    data = request.form
+
+    cert.title = data.get('title', cert.title)
+    cert.client = data.get('client', cert.client)
+    cert.nature_of_project = data.get('nature_of_project', cert.nature_of_project)
+    cert.sub_nature_of_project = data.get('sub_nature_of_project', cert.sub_nature_of_project)
+    cert.value = data.get('value', cert.value)
+    cert.warranty_years = data.get('warranty_years', cert.warranty_years)
+    cert.om_years = data.get('om_years', cert.om_years)
+    cert.project_status = data.get('project_status', cert.project_status)
+    cert.tcil_contact_person = data.get('tcil_contact_person', cert.tcil_contact_person)
+    cert.technologies = data.get('technologies', cert.technologies)
+    cert.concerned_hod = data.get('concerned_hod', cert.concerned_hod)
+    cert.client_contact_name = data.get('client_contact_name', cert.client_contact_name)
+    cert.client_contact_phone = data.get('client_contact_phone', cert.client_contact_phone)
+    cert.client_contact_email = data.get('client_contact_email', cert.client_contact_email)
+
+    # Update Date Fields using our parse_date helper
+    cert.start_date = parse_date(data.get('start_date')) or cert.start_date
+    cert.go_live_date = parse_date(data.get('go_live_date')) or cert.go_live_date
+    cert.end_date = parse_date(data.get('end_date')) or cert.end_date
+
+    # Handle File Re-upload
+    if 'file' in request.files:
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            unique_name = f"{uuid.uuid4().hex[:8]}_{secure_filename(file.filename)}"
+            file.save(os.path.join(UPLOAD_FOLDER, unique_name))
+            cert.filename = unique_name
+
+    #  Reset status for re-approval
+    cert.status = 'pending' 
+    db.session.commit()
+    
+    return jsonify(message="Certificate updated and resubmitted for approval"), 200
+
 @routes_bp.route('/auth/managers', methods=['GET'])
 def get_managers():
     managers = User.query.filter(User.role.in_(['manager', 'admin'])).all()
@@ -201,16 +255,28 @@ def send_async_email(app, message_data):
         except Exception as e:
             print(f"MAIL ERROR: {str(e)}")
 
-
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.get_json().get('email')
     user = User.query.filter_by(email=email).first()
+    
     if user:
-        token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=30), additional_claims={"type": "password_reset"})
+        token = create_access_token(
+            identity=str(user.id), 
+            expires_delta=timedelta(hours=1),
+            additional_claims={"type": "password_reset"} # Matches your reset_password check
+        )
+        
         link = f"https://tcil-frontend.onrender.com/reset-password/{token}"
-        threading.Thread(target=send_async_email, args=(current_app._get_current_object(), {"to": user.email, "subject": "Reset Password", "body": f"Link: {link}"})).start()
-    return jsonify(msg="If email exists, link sent.")
+        msg_data = {
+            "to": user.email,
+            "subject": "CertFlow -Reset Your Password",
+            "body": f"Click the link to reset your password: {link}"
+        }
+        
+        send_async_email(current_app._get_current_object(), msg_data)
+        
+    return jsonify(message="If account exists, reset instructions were sent."), 200
 
 @routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
 def reset_password(token):
@@ -223,3 +289,35 @@ def reset_password(token):
         db.session.commit()
         return jsonify(msg="Success")
     except: return jsonify(msg="Expired/Invalid"), 400
+
+@routes_bp.route('/dashboard/stats', methods=['GET'])
+@jwt_required()
+@role_required(['manager', 'admin'])
+def get_dashboard_stats():
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get('role')
+
+    if role == 'admin':
+        # Admin sees the entire organization
+        total_uploads = Certificate.query.count()
+        pending_approvals = Certificate.query.filter_by(status='pending').count()
+        total_users = User.query.count()
+    else:
+        # Manager sees only their team
+        # Get IDs of all users reporting to this manager
+        team_member_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
+        
+        # Filter certificates belonging to those IDs
+        total_uploads = Certificate.query.filter(Certificate.user_id.in_(team_member_ids)).count()
+        pending_approvals = Certificate.query.filter(
+            Certificate.user_id.in_(team_member_ids), 
+            Certificate.status == 'pending'
+        ).count()
+        total_users = len(team_member_ids)
+
+    return jsonify({
+        "total_uploads": total_uploads,
+        "pending_approvals": pending_approvals,
+        "team_size": total_users
+    }), 200
