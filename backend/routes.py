@@ -56,32 +56,30 @@ def download_certificate(cert_id):
     cert = Certificate.query.get_or_404(cert_id)
     return send_file(os.path.join(UPLOAD_FOLDER, cert.filename), as_attachment=True)
 
-
 @routes_bp.route('/dashboard/stats', methods=['GET'])
 @jwt_required()
-@role_required(['manager', 'admin'])
-def get_stats():
+def get_unified_stats():
     user_id = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get('role')
+    role = get_jwt().get('role')
+
     if role == 'admin':
-        user_count = User.query.count()
         certs_q = Certificate.query
+        total_users = User.query.count()
     elif role == 'manager':
-        sub_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
-        certs_q = Certificate.query.filter(Certificate.user_id.in_(sub_ids))
-        user_count = len(sub_ids)
+        team_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
+        certs_q = Certificate.query.filter(Certificate.user_id.in_(team_ids))
+        total_users = len(team_ids)
     else:
-        # Employee sees ONLY their own stats
+        # Employee stats
         certs_q = Certificate.query.filter_by(user_id=user_id)
-        user_count = 1
+        total_users = 1
 
     return jsonify({
         "total_uploads": certs_q.count(),
         "pending_approvals": certs_q.filter_by(status='pending').count(),
         "approved": certs_q.filter_by(status='approved').count(),
-        "team_size": user_count
-    })
+        "team_size": total_users
+    }), 200
 
 # --- CERTIFICATE MANAGEMENT ---
 
@@ -243,15 +241,20 @@ def get_managers():
 
 def send_async_email(app, message_data):
     with app.app_context():
-       
-        from_email = app.config.get('MAIL_DEFAULT_SENDER') 
+        # Force the email to a string to ensure it's not None
+        sender = app.config.get('MAIL_DEFAULT_SENDER')
         
+        if not sender:
+            print("CRITICAL ERROR: MAIL_DEFAULT_SENDER is not set in environment.")
+            return
+
         message = Mail(
-            from_email=from_email,
+            from_email=sender,
             to_emails=message_data['to'],
             subject=message_data['subject'],
             plain_text_content=message_data['body']
         )
+       
         try:
             sg = SendGridAPIClient(app.config.get('SENDGRID_API_KEY'))
             response = sg.send(message)
@@ -294,34 +297,3 @@ def reset_password(token):
         return jsonify(msg="Success")
     except: return jsonify(msg="Expired/Invalid"), 400
 
-@routes_bp.route('/dashboard/stats', methods=['GET'])
-@jwt_required()
-@role_required(['manager', 'admin'])
-def get_dashboard_stats():
-    user_id = get_jwt_identity()
-    claims = get_jwt()
-    role = claims.get('role')
-
-    if role == 'admin':
-        # Admin sees the entire organization
-        total_uploads = Certificate.query.count()
-        pending_approvals = Certificate.query.filter_by(status='pending').count()
-        total_users = User.query.count()
-    else:
-        # Manager sees only their team
-        # Get IDs of all users reporting to this manager
-        team_member_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
-        
-        # Filter certificates belonging to those IDs
-        total_uploads = Certificate.query.filter(Certificate.user_id.in_(team_member_ids)).count()
-        pending_approvals = Certificate.query.filter(
-            Certificate.user_id.in_(team_member_ids), 
-            Certificate.status == 'pending'
-        ).count()
-        total_users = len(team_member_ids)
-
-    return jsonify({
-        "total_uploads": total_uploads,
-        "pending_approvals": pending_approvals,
-        "team_size": total_users
-    }), 200

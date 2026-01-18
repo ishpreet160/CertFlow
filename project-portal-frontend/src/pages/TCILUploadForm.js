@@ -16,13 +16,7 @@ function TCILUploadForm() {
   const [loading, setLoading] = useState(false);
 
   //  Redirect if not a Manager
-  useEffect(() => {
-    if (userRole !== 'manager') {
-      console.warn("Unauthorized access attempt to TCIL Upload.");
-      navigate('/dashboard');
-    }
-  }, [userRole, navigate]);
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -66,7 +60,9 @@ function TCILUploadForm() {
   return (
     <div className="container mt-5 p-4 shadow rounded bg-white" style={{ maxWidth: '600px' }}>
       <h2 className="text-center mb-1 text-primary fw-bold">Upload TCIL Certificate</h2>
-      <p className="text-center text-muted mb-4 small">Restricted to: <strong>Management Only</strong></p>
+      <p className="text-center text-muted mb-4 small">
+        Standard Corporate Certificate Repository
+      </p>
       
       {message && <div className="alert alert-success fw-bold text-center">{message}</div>}
       {error && <div className="alert alert-danger fw-bold text-center">{error}</div>}
