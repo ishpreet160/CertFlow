@@ -19,9 +19,8 @@ function App() {
   return (
     <div>
       <NavBar />
-
+      <main className="flex-grow-1 d-flex flex-column justify-content-center">
       <Routes>
-
           <Route
           path="/register"
           element={<RegisterPage/>}/>
@@ -63,6 +62,7 @@ function App() {
         />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+      </main>
     </div>
   );
 }

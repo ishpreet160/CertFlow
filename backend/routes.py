@@ -179,6 +179,12 @@ def upload_tcil():
         db.session.rollback(); return jsonify(msg=str(e)), 500
 
 # --- AUTH & EMAILS ---
+@routes_bp.route('/auth/managers', methods=['GET'])
+def get_managers():
+    # Fetch everyone who can act as a supervisor
+    managers = User.query.filter(User.role.in_(['manager', 'admin'])).all()
+    return jsonify([{"id": m.id, "name": m.name, "role": m.role} for m in managers]), 200
+
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
     email = request.get_json().get('email')
