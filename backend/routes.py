@@ -243,17 +243,21 @@ def get_managers():
 
 def send_async_email(app, message_data):
     with app.app_context():
+       
+        from_email = app.config.get('MAIL_DEFAULT_SENDER') 
+        
         message = Mail(
-            from_email=app.config.get('MAIL_DEFAULT_SENDER'),
+            from_email=from_email,
             to_emails=message_data['to'],
             subject=message_data['subject'],
             plain_text_content=message_data['body']
         )
         try:
             sg = SendGridAPIClient(app.config.get('SENDGRID_API_KEY'))
-            sg.send(message)
+            response = sg.send(message)
+            print(f"MAIL SENT: Status Code {response.status_code}")
         except Exception as e:
-            print(f"MAIL ERROR: {str(e)}")
+            print(f"SENDGRID DETAIL: {e.body if hasattr(e, 'body') else str(e)}")
 
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():

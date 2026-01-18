@@ -14,55 +14,87 @@ import TCILUploadForm from './pages/TCILUploadForm';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import Home from './pages/Home';
+import ManagerDashboard from './components/ManagerDashboard';
 
 function App() {
   return (
     <div>
       <NavBar />
       <main className="flex-grow-1 d-flex flex-column justify-content-center">
-      <Routes>
+        <Routes>
+          <Route path="/register" element={<RegisterPage />} />
+
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Public Password Recovery Routes */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route
-          path="/register"
-          element={<RegisterPage/>}/>
+            path="/reset-password/:token"
+            element={<ResetPasswordPage />}
+          />
 
+          {/* Standard Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/upload"
+            element={
+              <ProtectedRoute>
+                <UploadPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tcil-upload"
+            element={
+              <ProtectedRoute>
+                <TCILUploadForm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/certificate/:id"
+            element={
+              <ProtectedRoute>
+                <CertificateDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/certificates/edit/:id"
+            element={
+              <ProtectedRoute>
+                <EditCertificateForm />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<LoginPage />} />
-        
-        {/* Public Password Recovery Routes */}
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-        
-        {/* Standard Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-        />
-        <Route
-          path="/upload"
-          element={<ProtectedRoute><UploadPage /></ProtectedRoute>}
-        />
-        <Route
-          path="/tcil-upload"
-          element={<ProtectedRoute><TCILUploadForm /></ProtectedRoute>}
-        />
-        <Route
-          path="/certificate/:id"
-          element={<ProtectedRoute><CertificateDetails /></ProtectedRoute>}
-        />
-        <Route
-          path="/certificates/edit/:id"
-          element={<ProtectedRoute><EditCertificateForm /></ProtectedRoute>}
-        />
-
-        {/* Manager-Only Restricted Routes */}
-        
-        <Route
-          path="/manager/tcil-certificates"
-          element={<ProtectedRoute><ManagerTCILCertificates /></ProtectedRoute>}
-        />
-        <Route path="*" element={<Navigate to="/login" />} />
-      </Routes>
+          {/* Manager-Only Restricted Routes */}
+          <Route
+            path="/manager/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["manager", "admin"]}>
+                <ManagerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager/tcil-certificates"
+            element={
+              <ProtectedRoute>
+                <ManagerTCILCertificates />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
       </main>
     </div>
   );

@@ -41,7 +41,7 @@ function ForgotPasswordPage() {
             <label className="form-label small fw-bold">Email Address</label>
             <input
               type="email"
-              className="form-control form-control-lg"
+              className="form-control form-control"
               placeholder="name@tcil.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)} 
