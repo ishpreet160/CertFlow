@@ -18,14 +18,11 @@ function Dashboard() {
       try {
         setLoading(true);
         // Admins and Managers use the 'all' route; Employees use their own.
-        const route = (role === 'manager' || role === 'admin') 
-          ? '/certificates/all' 
-          : '/certificates';
+        const route = '/certificates/all';
           
         const certsRes = await api.get(route);
-        const certList = Array.isArray(certsRes.data.certificates)
-          ? certsRes.data.certificates
-          : [];
+        const certList = Array.isArray(certsRes.data) ? certsRes.data : [];
+        setCertificates(certList);
 
         setCertificates(certList);
       } catch (err) {
@@ -57,7 +54,7 @@ function Dashboard() {
 
   const handlePreview = async (id) => {
     try {
-      // Must use responseType 'blob' because the route is JWT protected.
+      //  'blob' because the route is JWT protected.
       const response = await api.get(`/certificates/${id}/file`, { responseType: 'blob' });
       const url = URL.createObjectURL(response.data);
       window.open(url, '_blank');
@@ -193,7 +190,7 @@ function Dashboard() {
                       {cert.status}
                     </span>
                   </td>
-                  <td>{new Date(cert.uploaded_on).toLocaleDateString()}</td>
+                  <td>{cert.timestamp ? new Date(cert.timestamp).toLocaleDateString() : 'N/A'}</td>
                   <td>
                     <div className="d-flex justify-content-center gap-2">
                       <button className="btn btn-sm btn-light border" onClick={() => handlePreview(cert.id)}>Preview</button>
