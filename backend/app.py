@@ -15,9 +15,21 @@ def create_app():
     db.init_app(app)
     jwt.init_app(app)
     CORS(app)
+    @jwt.user_identity_loader
+    def user_identity_lookup(user_identity):
+        if isinstance(user_identity, dict):
+            return str(user_identity.get("id"))
+        return str(user_identity)
+
+    @jwt.additional_claims_loader
+    def add_claims_to_access_token(user_identity):
+        if isinstance(user_identity, dict):
+            return {"role": user_identity.get("role")}
+        return {}
+    
 
     with app.app_context():
-        # Import Blueprints inside context to avoid circularity
+      
         from routes import routes_bp
         from auth import auth_bp
         
