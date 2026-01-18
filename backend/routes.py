@@ -1,7 +1,7 @@
 import os, uuid, threading
 from extensions import db
 from flask import Blueprint, jsonify, request, send_from_directory, current_app, send_file
-from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, get_jwt
 from models import TCILCertificate, db, Upload, Certificate, User
 from decorators import role_required
 from werkzeug.utils import secure_filename
@@ -38,12 +38,12 @@ def preview_certificate(cert_id):
 
     cert = Certificate.query.get_or_404(cert_id)
     identity = get_jwt_identity()
-    user_id = identity['id'] if isinstance(identity, dict) else identity
-    
-  
-    is_owner = cert.user_id == user_id
-    is_privileged = isinstance(identity, dict) and identity.get('role') in ['manager', 'admin']
-    
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get('role')
+    is_owner = str(cert.user_id) == str(user_id)
+    is_privileged = role in ['manager', 'admin']
+
     if not is_owner and not is_privileged:
         return jsonify(message="Forbidden"), 403
 
@@ -62,9 +62,10 @@ def download_certificate(cert_id):
 @role_required(['manager', 'admin'])
 def get_stats():
     identity = get_jwt_identity()
-    user_id = identity['id'] if isinstance(identity, dict) else identity
-    
-    if identity.get('role') == 'admin':
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get('role')
+    if role == 'admin':
         users_q = User.query.filter(User.role != 'admin')
         certs_q = Certificate.query
     else:
@@ -83,10 +84,10 @@ def get_stats():
 @routes_bp.route('/certificates/all', methods=['GET'])
 @jwt_required()
 def get_all_certificates():
-    identity = get_jwt_identity()
-    user_id = identity['id'] if isinstance(identity, dict) else identity
-    role = identity['role'] if isinstance(identity, dict) else User.query.get(user_id).role
-
+    
+    user_id = get_jwt_identity()
+    claims = get_jwt()
+    role = claims.get('role', 'employee')
     if role == 'admin':
         certs = Certificate.query.all()
     elif role == 'manager':
@@ -109,10 +110,9 @@ def get_all_certificates():
 @routes_bp.route('/certificates', methods=['POST'])
 @jwt_required()
 def upload_certificate():
-    identity = get_jwt_identity()
-    user_id = identity['id'] if isinstance(identity, dict) else identity
-    
-    if isinstance(identity, dict) and identity.get('role') == 'admin':
+    claims = get_jwt()
+    user_id = get_jwt_identity()
+    if claims.get('role') == 'admin':
         return jsonify(message="Admins cannot upload"), 403
 
     file = request.files.get('file')
@@ -129,27 +129,27 @@ def upload_certificate():
 
         cert = Certificate(
             title=request.form.get('title'),
-         client=request.form.get('client'),
-         nature_of_project=request.form.get('nature_of_project'),
-    sub_nature_of_project=request.form.get('sub_nature_of_project'), # Added
-    start_date=parse_date(request.form.get('start_date')),
-    go_live_date=parse_date(request.form.get('go_live_date')), # Added
-    end_date=parse_date(request.form.get('end_date')),
-    warranty_years=request.form.get('warranty_years'), # Added
-    om_years=request.form.get('om_years'), # Added
-    value=request.form.get('value'), # Added
-    project_status=request.form.get('project_status'), # Added
-    tcil_contact_person=request.form.get('tcil_contact_person'), # Added
-    technologies=request.form.get('technologies'),
-    concerned_hod=request.form.get('concerned_hod'), # Added
-    client_contact_name=request.form.get('client_contact_name'), # Added
-    client_contact_phone=request.form.get('client_contact_phone'), # Added
-    client_contact_email=request.form.get('client_contact_email'), # Added
-    status='pending',
-    filename=unique_name,
-    user_id=user_id,
-    upload_id=up.id,
-    timestamp=datetime.utcnow()
+            client=request.form.get('client'),
+            nature_of_project=request.form.get('nature_of_project'),
+            sub_nature_of_project=request.form.get('sub_nature_of_project'),
+            start_date=parse_date(request.form.get('start_date')),
+            go_live_date=parse_date(request.form.get('go_live_date')),
+            end_date=parse_date(request.form.get('end_date')),
+            warranty_years=request.form.get('warranty_years'),
+            om_years=request.form.get('om_years'),
+            value=request.form.get('value'),
+            project_status=request.form.get('project_status'),
+            tcil_contact_person=request.form.get('tcil_contact_person'),
+            technologies=request.form.get('technologies'),
+            concerned_hod=request.form.get('concerned_hod'),
+            client_contact_name=request.form.get('client_contact_name'),
+            client_contact_phone=request.form.get('client_contact_phone'),
+            client_contact_email=request.form.get('client_contact_email'),
+            status='pending',
+            filename=unique_name,
+            user_id=user_id,
+            upload_id=up.id,
+            timestamp=datetime.utcnow()
         )
         db.session.add(cert); db.session.commit()
         return jsonify(message='Uploaded', cert_id=cert.id), 201
@@ -162,13 +162,12 @@ def upload_certificate():
 @jwt_required()
 @role_required(['manager', 'admin'])
 def update_status(cert_id):
-    identity = get_jwt_identity()
-    user_id = identity['id'] if isinstance(identity, dict) else identity
+    user_id = get_jwt_identity()
+    claims = get_jwt()
     cert = Certificate.query.get_or_404(cert_id)
-    
-    if identity.get('role') == 'manager':
+    if claims.get('role') == 'manager':
         sub = User.query.get(cert.user_id)
-        if not sub or sub.manager_id != user_id:
+        if not sub or str(sub.manager_id) != str(user_id):
             return jsonify(message="Unauthorized for this team"), 403
 
     status = request.get_json().get('status')
