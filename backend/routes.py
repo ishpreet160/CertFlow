@@ -63,16 +63,23 @@ def get_unified_stats():
     role = get_jwt().get('role')
 
     if role == 'admin':
+
         certs_q = Certificate.query
         total_users = User.query.count()
+    
     elif role == 'manager':
+
         team_ids = [u.id for u in User.query.filter_by(manager_id=user_id).all()]
+        team_ids.append(int(user_id)) 
+        
         certs_q = Certificate.query.filter(Certificate.user_id.in_(team_ids))
         total_users = len(team_ids)
+    
     else:
-        # Employee stats
+ 
         certs_q = Certificate.query.filter_by(user_id=user_id)
-        total_users = 1
+
+        total_users = 1 
 
     return jsonify({
         "total_uploads": certs_q.count(),
@@ -297,3 +304,30 @@ def reset_password(token):
         return jsonify(msg="Success")
     except: return jsonify(msg="Expired/Invalid"), 400
 
+@routes_bp.route('/tcil/upload', methods=['POST'])
+@jwt_required()
+def upload_tcil_official():
+    user_id = get_jwt_identity()
+    
+    file = request.files.get('pdf') # Matches 'pdf' key in your Frontend FormData
+    if not file or not file.filename.endswith('.pdf'):
+        return jsonify(message='Only PDF files are allowed for TCIL repository'), 400
+
+    unique_name = f"TCIL_{uuid.uuid4().hex[:6]}_{secure_filename(file.filename)}"
+    path = os.path.join(TCIL_FOLDER, unique_name)
+    file.save(path)
+
+    try:
+        new_tcil = TCILCertificate(
+            name=request.form.get('name'),
+            valid_from=parse_date(request.form.get('valid_from')),
+            valid_till=parse_date(request.form.get('valid_till')),
+            filename=unique_name,
+            uploaded_by=user_id
+        )
+        db.session.add(new_tcil)
+        db.session.commit()
+        return jsonify(msg="TCIL Certificate published to repository"), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(message=str(e)), 500
