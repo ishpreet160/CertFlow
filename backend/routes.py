@@ -162,19 +162,24 @@ def upload_certificate():
 @jwt_required()
 @role_required(['manager', 'admin'])
 def update_status(cert_id):
-    user_id = get_jwt_identity()
+    user_id = get_jwt_identity() 
     claims = get_jwt()
+    user_role = claims.get('role')
+    
     cert = Certificate.query.get_or_404(cert_id)
-    if claims.get('role') == 'manager':
-        sub = User.query.get(cert.user_id)
-        if not sub or str(sub.manager_id) != str(user_id):
-            return jsonify(message="Unauthorized for this team"), 403
+    
+
+    if user_role == 'manager':
+        sub_employee = User.query.get(cert.user_id)
+        if not sub_employee or str(sub_employee.manager_id) != str(user_id):
+            return jsonify(message="Unauthorized for this team member"), 403
 
     status = request.get_json().get('status')
     if status in ['approved', 'rejected']:
         cert.status = status
         db.session.commit()
         return jsonify(message=f"Status: {status}")
+        
     return jsonify(message="Invalid status"), 400
 
 @routes_bp.route('/auth/managers', methods=['GET'])
