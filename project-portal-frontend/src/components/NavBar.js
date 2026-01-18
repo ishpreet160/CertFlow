@@ -16,7 +16,7 @@ function NavBar() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4 shadow-sm">
       <Link className="navbar-brand fw-bold fs-4" to="/dashboard">
-        TCIL Portal
+       CertFlow
       </Link>
 
       <button
@@ -29,46 +29,51 @@ function NavBar() {
       </button>
 
       <div className="collapse navbar-collapse" id="navbarNav">
-        {token && (
-          <ul className="navbar-nav ms-auto align-items-center">
+  <ul className="navbar-nav ms-auto align-items-center">
+    {token ? (
+      <>
+        {/* Logged In Links */}
+        <li className="nav-item">
+          <Link className="nav-link" to="/dashboard">Dashboard</Link>
+        </li>
+        <li className="nav-item">
+          <Link className="nav-link" to="/upload">Upload Project Experience</Link>
+        </li>
+
+        {(role === "manager" || role === "admin") && (
+          <>
             <li className="nav-item">
-              <Link className="nav-link" to="/dashboard">Dashboard</Link>
+              <Link className="nav-link" to="/tcil-upload">Upload TCIL Certificates</Link>
             </li>
-
-            {/* Standard Project Upload for Employees/Managers */}
             <li className="nav-item">
-              <Link className="nav-link" to="/upload">Upload Project Experience</Link>
+              <Link className="nav-link" to="/register">Add Team Member</Link>
             </li>
-
-            {/* TCIL Specifics for Manager/Admin only */}
-            {(role === "manager" || role === "admin") && (
-              <>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/tcil-upload">Upload TCIL Certs</Link>
-                </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/register">Register User</Link>
-                </li>
-              </>
-            )}
-
-            <li className="nav-item ms-lg-3">
-              <span className="navbar-text text-light me-3 d-none d-lg-inline">
-                Hi, <strong>{userName || 'User'}</strong> 
-                <span className="badge bg-primary ms-2 text-uppercase" style={{fontSize: '0.7rem'}}>
-                  {role}
-                </span>
-              </span>
-            </li>
-
-            <li className="nav-item">
-              <button className="btn btn-sm btn-outline-danger" onClick={handleLogout}>
-                Logout
-              </button>
-            </li>
-          </ul>
+          </>
         )}
-      </div>
+
+        <li className="nav-item ms-lg-3">
+          <span className="navbar-text text-light me-3">
+            Hi, <strong>{userName || 'User'}</strong> 
+            <span className="badge bg-primary ms-2">{role}</span>
+          </span>
+        </li>
+        <li className="nav-item">
+          <button className="btn btn-sm btn-outline-danger" onClick={handleLogout}>Logout</button>
+        </li>
+      </>
+    ) : (
+      <>
+        {/* Logged Out Links - Crucial for the Homepage */}
+        <li className="nav-item">
+          <Link className="nav-link" to="/login">Login</Link>
+        </li>
+        <li className="nav-item">
+          <Link className="nav-link btn btn-primary text-white ms-2" to="/register">Join CertFlow</Link>
+        </li>
+      </>
+    )}
+  </ul>
+</div>
     </nav>
   );
 }

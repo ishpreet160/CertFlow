@@ -3,31 +3,51 @@ import { Link } from 'react-router-dom';
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="flex justify-between items-center p-6 border-b">
-        <h1 className="text-2xl font-extrabold text-blue-600 tracking-tight">CertFlow</h1>
-        <Link to="/login" className="text-gray-600 font-semibold hover:text-blue-600">Login</Link>
-      </nav>
-
+    <div className="min-h-screen bg-light">
       {/* Hero Section */}
-      <header className="py-20 px-6 text-center">
-        <h2 className="text-5xl font-bold text-gray-900 mb-6">
-          Certification Management <br /><span className="text-blue-600">Built for Scale.</span>
+      <header className="bg-white py-20 px-6 text-center shadow-sm">
+        <h2 className="display-4 font-weight-bold text-dark mb-4">
+          Certification Management <br /><span className="text-primary">Built for Scale.</span>
         </h2>
-        <p className="text-xl text-gray-500 max-w-2xl mx-auto mb-10">
+        <p className="lead text-muted max-w-2xl mx-auto mb-5">
           CertFlow automates project approvals and credential tracking for modern engineering teams. 
-          
+          The single source of truth for your professional governance.
         </p>
-        <div className="flex justify-center gap-4">
-          <Link to="/register" className="bg-blue-600 text-white px-8 py-4 rounded-lg font-bold hover:bg-blue-700 shadow-lg">
-            Get Started
+        <div className="d-flex justify-content-center gap-3">
+          <Link to="/login" className="btn btn-primary btn-lg px-5 shadow">
+            Login to Dashboard
           </Link>
-          <a href="#features" className="bg-gray-100 text-gray-800 px-8 py-4 rounded-lg font-bold hover:bg-gray-200">
-            View Features
-          </a>
+          {/* Note: In your current logic, /register is PROTECTED. 
+              If you want guests to sign up, move /register out of ProtectedRoute in App.js */}
+          <Link to="/register" className="btn btn-outline-secondary btn-lg px-5">
+            Join the Team
+          </Link>
         </div>
       </header>
+
+      {/* Features Section */}
+      <section id="features" className="container py-5">
+        <div className="row g-4 text-center">
+          <div className="col-md-4">
+            <div className="p-4 bg-white rounded shadow-sm h-100">
+              <h4 className="text-primary">Direct Hierarchy</h4>
+              <p className="text-muted">Direct manager-employee linkage for seamless project validation.</p>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="p-4 bg-white rounded shadow-sm h-100">
+              <h4 className="text-primary">Instant Exports</h4>
+              <p className="text-muted">Generate Excel reports of all verified credentials with one click.</p>
+            </div>
+          </div>
+          <div className="col-md-4">
+            <div className="p-4 bg-white rounded shadow-sm h-100">
+              <h4 className="text-primary">Email Alerts</h4>
+              <p className="text-muted">Automatic notifications via SendGrid when your status changes.</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

@@ -151,10 +151,9 @@ function Dashboard() {
             <option value="client">Alphabetical (Client)</option>
           </select>
         </div>
-
-        <div className="d-flex align-items-end gap-2">
-          <button className="btn btn-outline-success" onClick={() => exportToExcel(filteredCertificates, 'Filtered_Report')}>
-            Export Filtered
+        <div className="col-md-9 d-flex align-items-end justify-content-end">
+          <button className="btn btn-success shadow-sm" onClick={() => exportToExcel(filteredCertificates, 'CertFlow_Report')}>
+           <i className="bi bi-file-earmark-spreadsheet"></i> Export Filtered to Excel
           </button>
         </div>
       </div>

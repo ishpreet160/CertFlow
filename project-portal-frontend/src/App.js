@@ -13,6 +13,7 @@ import EditCertificateForm from './pages/EditCertificateForm';
 import TCILUploadForm from './pages/TCILUploadForm';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import Home from './pages/Home';
 
 function App() {
   return (
@@ -20,22 +21,19 @@ function App() {
       <NavBar />
 
       <Routes>
-       
-        <Route path="/" element={<LoginPage />} />
+
+          <Route
+          path="/register"
+          element={<RegisterPage/>}/>
+
+
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
         
         {/* Public Password Recovery Routes */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         
-        {/* 
-            Only logged-in Admins/Managers should access this.
-        */}
-        <Route
-          path="/register"
-          element={<ProtectedRoute><RegisterPage /></ProtectedRoute>}
-        />
-
         {/* Standard Protected Routes */}
         <Route
           path="/dashboard"
