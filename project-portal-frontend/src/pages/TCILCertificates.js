@@ -41,7 +41,7 @@ function TCILCertificates() {
 
   const handleDownload = async (filename) => {
     try {
-      const res = await api.get(`/tcil/certificates/download${filename}`, {
+      const res = await api.get(`/tcil/certificates/download/${filename}`, {
         responseType: "blob",
       });
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -79,9 +79,9 @@ function TCILCertificates() {
           <thead className="table-dark">
             <tr>
               <th>Certificate Name</th>
+              <th>Uploaded By</th>
               <th>Valid From</th>
               <th>Valid Till</th>
-              <th>Upload Date</th>
               <th className="text-center">Action</th>
             </tr>
           </thead>

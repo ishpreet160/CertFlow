@@ -258,54 +258,41 @@ def send_async_email(app, message_data):
             )
             
             mail.send(msg)
-            print(f" Email sent to {message_data['to']}")
+            print("Mail sent successfully")
         except Exception as e:
-            print(f" ERROR: {str(e)}")
+            print(f"MAIL ERROR: {e}")
 
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
-    email = request.get_json().get('email')
-    user = User.query.filter_by(email=email).first()
-    
-    if user:
-        token = create_access_token(
-            identity=str(user.id), 
-            expires_delta=timedelta(hours=1),
-            additional_claims={"type": "password_reset"}
-        )
-        
-        link = f"https://tcil-frontend.onrender.com/reset-password/{token}"
-        
-        msg_data = {
-            "to": user.email,
-            "subject": "CertFlow - Reset Your Password",
-            "body": f"Please use the following link to reset your password: {link}", # Fallback for old apps
-            "html": f"""
-                <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; background-color: #f4f4f4;">
-                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        <div style="background-color: #007bff; padding: 20px; text-align: center;">
-                            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">CertFlow</h1>
-                        </div>
-                        <div style="padding: 30px; color: #333333;">
-                            <h2 style="color: #333333;">Password Reset Request</h2>
-                            <p>Hello,</p>
-                            <p>We received a request to reset the password for your account. Click the button below to set a new one. <strong>This link expires in 1 hour.</strong></p>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="{link}" style="background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset My Password</a>
-                            </div>
-                            <p style="font-size: 14px; color: #666;">If you did not request this, you can safely ignore this email.</p>
-                            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
-                            <p style="font-size: 12px; color: #999;">Trouble with the button? Copy and paste this link: <br> {link}</p>
-                        </div>
-                    </div>
-                </div>
-            """
-        }
-        
-        send_async_email(current_app._get_current_object(), msg_data)
-        
-    return jsonify(message="If account exists, reset instructions were sent."), 200
+    try:
+        email = request.get_json().get('email')
+        user = User.query.filter_by(email=email).first()
+        if user:
+            token = create_access_token(
+                identity=str(user.id), 
+                expires_delta=timedelta(hours=1),
+                additional_claims={"type": "password_reset"}
+            )
+            link = f"https://tcil-frontend.onrender.com/reset-password/{token}"
+            
+            msg_data = {
+                "to": user.email,
+                "subject": "CertFlow - Reset Your Password",
+                "html": f"<p>Click <a href='{link}'>here</a> to reset your password.</p>"
+            }
 
+   
+            app = current_app._get_current_object()
+            thread = threading.Thread(target=send_async_email, args=(app, msg_data))
+            thread.start()
+            
+
+        return jsonify(message="If account exists, reset instructions were sent."), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(message="Internal Server Error"), 500
+    
 @routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
 def reset_password(token):
     try:
@@ -373,7 +360,8 @@ def get_all_tcil():
             "name": c.name,
             "valid_from": c.valid_from.isoformat() if c.valid_from else None,
             "valid_till": c.valid_till.isoformat() if c.valid_till else None,
-            "filename": c.pdf_path, # uses pdf_path
+            "filename": c.pdf_path, 
+            "uploader_id": c.upload.user_id if c.upload else None,
             "uploaded_by": c.upload.user.name if c.upload and c.upload.user else "System",
             "uploaded_on": c.upload.timestamp.isoformat() if c.upload else None
         } for c in certs]
