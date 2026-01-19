@@ -1,13 +1,13 @@
 import os, uuid, threading
-from extensions import db
+from extensions import db, mail
+from flask_mail import Message
 from flask import Blueprint, jsonify, request, send_from_directory, current_app, send_file
-from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, get_jwt, decode_token
 from models import TCILCertificate, db, Upload, Certificate, User
 from decorators import role_required
 from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__)) 
@@ -248,26 +248,19 @@ def get_managers():
 
 def send_async_email(app, message_data):
     with app.app_context():
-        # Force the email to a string to ensure it's not None
-        sender = app.config.get('MAIL_DEFAULT_SENDER')
-        
-        if not sender:
-            print("CRITICAL ERROR: MAIL_DEFAULT_SENDER is not set in environment.")
-            return
-
-        message = Mail(
-            from_email=sender,
-            to_emails=message_data['to'],
-            subject=message_data['subject'],
-            plain_text_content=message_data['body']
-        )
-       
         try:
-            sg = SendGridAPIClient(app.config.get('SENDGRID_API_KEY'))
-            response = sg.send(message)
-            print(f"MAIL SENT: Status Code {response.status_code}")
+            
+            msg = Message(
+                subject=message_data['subject'],
+                recipients=[message_data['to']],
+                body=message_data.get('body'),
+                html=message_data.get('html') 
+            )
+            
+            mail.send(msg)
+            print(f" Email sent to {message_data['to']}")
         except Exception as e:
-            print(f"SENDGRID DETAIL: {e.body if hasattr(e, 'body') else str(e)}")
+            print(f" ERROR: {str(e)}")
 
 @routes_bp.route('/auth/forgot-password', methods=['POST'])
 def forgot_password():
@@ -278,14 +271,35 @@ def forgot_password():
         token = create_access_token(
             identity=str(user.id), 
             expires_delta=timedelta(hours=1),
-            additional_claims={"type": "password_reset"} # Matches your reset_password check
+            additional_claims={"type": "password_reset"}
         )
         
         link = f"https://tcil-frontend.onrender.com/reset-password/{token}"
+        
         msg_data = {
             "to": user.email,
-            "subject": "CertFlow -Reset Your Password",
-            "body": f"Click the link to reset your password: {link}"
+            "subject": "CertFlow - Reset Your Password",
+            "body": f"Please use the following link to reset your password: {link}", # Fallback for old apps
+            "html": f"""
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; background-color: #f4f4f4;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                        <div style="background-color: #007bff; padding: 20px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">CertFlow</h1>
+                        </div>
+                        <div style="padding: 30px; color: #333333;">
+                            <h2 style="color: #333333;">Password Reset Request</h2>
+                            <p>Hello,</p>
+                            <p>We received a request to reset the password for your account. Click the button below to set a new one. <strong>This link expires in 1 hour.</strong></p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{link}" style="background-color: #28a745; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset My Password</a>
+                            </div>
+                            <p style="font-size: 14px; color: #666;">If you did not request this, you can safely ignore this email.</p>
+                            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0;">
+                            <p style="font-size: 12px; color: #999;">Trouble with the button? Copy and paste this link: <br> {link}</p>
+                        </div>
+                    </div>
+                </div>
+            """
         }
         
         send_async_email(current_app._get_current_object(), msg_data)
@@ -294,15 +308,22 @@ def forgot_password():
 
 @routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
 def reset_password(token):
-    from flask_jwt_extended import decode_token
     try:
         decoded = decode_token(token)
-        if decoded.get('type') != 'password_reset': return jsonify(msg="Invalid"), 401
+        if decoded.get('type') != 'password_reset':
+            return jsonify(msg="Invalid token type"), 401
+            
         user = db.session.get(User, decoded['sub'])
-        user.set_password(request.get_json().get('password'))
+        if not user:
+            return jsonify(msg="User not found"), 404
+            
+        new_password = request.get_json().get('password')
+        user.set_password(new_password)
         db.session.commit()
-        return jsonify(msg="Success")
-    except: return jsonify(msg="Expired/Invalid"), 400
+        
+        return jsonify(msg="Password successfully updated!"), 200
+    except Exception as e:
+        return jsonify(msg="The reset link is invalid or has expired."), 400
 
 @routes_bp.route('/tcil/upload', methods=['POST'])
 @jwt_required()

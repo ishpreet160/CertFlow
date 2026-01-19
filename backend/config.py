@@ -20,8 +20,13 @@ class Config:
         raise ValueError("No JWT_SECRET_KEY set in environment variables!")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
 
-    # --- MAILING ---
-    SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY')
+   # --- MAILING (SMTP) ---
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+   
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME') 
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') 
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
 
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')

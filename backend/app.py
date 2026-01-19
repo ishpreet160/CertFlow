@@ -2,29 +2,28 @@ import os
 from flask import Flask
 from dotenv import load_dotenv
 from flask_cors import CORS
-from extensions import db, jwt 
+from extensions import db, jwt, mail
+from config import Config
 
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    
+    app.config.from_object(Config)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
     app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY", "super-secret-key")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+    app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+    app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT", 587))
+    app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "True") == "True"
+    app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+    app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD") 
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
-    app.config['SENDGRID_API_KEY'] = os.getenv("SENDGRID_API_KEY")
-
-    print("--- Environment Check ---")
-    print(f"DEBUG: MAIL_DEFAULT_SENDER -> {app.config['MAIL_DEFAULT_SENDER']}")
-    if not app.config['SENDGRID_API_KEY']:
-        print("WARNING: SENDGRID_API_KEY is missing from environment!")
-    print("-------------------------")
-
+   
     db.init_app(app)
     jwt.init_app(app)
+    mail.init_app(app)
     CORS(app)
 
 
