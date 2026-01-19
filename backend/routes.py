@@ -259,8 +259,8 @@ def send_async_email(app, message_data):
             from_email=sender,
             to_emails=message_data['to'],
             subject=message_data['subject'],
-            html_content=message_data['html'] # Change from plain_text to html_content [cite: 2026-01-07]
-)
+            plain_text_content=message_data['body']
+        )
        
         try:
             sg = SendGridAPIClient(app.config.get('SENDGRID_API_KEY'))
@@ -278,32 +278,18 @@ def forgot_password():
         token = create_access_token(
             identity=str(user.id), 
             expires_delta=timedelta(hours=1),
-            additional_claims={"type": "password_reset"}
+            additional_claims={"type": "password_reset"} # Matches your reset_password check
         )
         
         link = f"https://tcil-frontend.onrender.com/reset-password/{token}"
         msg_data = {
             "to": user.email,
-            "subject": "Reset Your CertFlow Password",
-            "html": f"""
-                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px; max-width: 500px;">
-                    <h2 style="color: #007bff;">CertFlow</h2>
-                    <h3>Password Reset Request</h3>
-                    <p>We received a request to reset your password. Click the button below to proceed:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="{link}" style="background: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
-                    </div>
-                    <p style="color: #666; font-size: 12px;">This link will expire in 1 hour. If you did not request this, please ignore this email.</p>
-                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                    <p style="color: #999; font-size: 11px;">Trouble with the button? Copy and paste this: {link}</p>
-                </div>
-            """
+            "subject": "CertFlow -Reset Your Password",
+            "body": f"Click the link to reset your password: {link}"
         }
         
-        # Call the email function ONLY if the user exists
         send_async_email(current_app._get_current_object(), msg_data)
         
-    # Always return 200 to prevent "Email Harvesting" (Security best practice)
     return jsonify(message="If account exists, reset instructions were sent."), 200
 
 @routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
