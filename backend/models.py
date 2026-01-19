@@ -11,15 +11,14 @@ class User(db.Model):
     password_hash = db.Column(db.Text, nullable=False)
     role = db.Column(db.String(20), default='employee') # admin, manager, employee
     manager_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-    
-    # Self-referential relationship for Team Hierarchy
+   
     employees = db.relationship('User', 
                                 backref=db.backref('manager', remote_side=[id]),
                                 foreign_keys=[manager_id])
     
     # Relationships
     uploads = db.relationship('Upload', backref='user', lazy=True, cascade="all, delete-orphan")
-    # Certificates linked directly to User for easier querying
+  
     certificates = db.relationship('Certificate', backref='owner', lazy=True)
 
     def set_password(self, password):
@@ -36,7 +35,7 @@ class Upload(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow) # executes on creation
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    # Back-populates ensures both sides are aware of each other
+ 
     tcil_certificate = db.relationship('TCILCertificate', back_populates='upload', uselist=False, cascade="all, delete-orphan")
     certificate = db.relationship('Certificate', back_populates='upload', uselist=False, cascade="all, delete-orphan")
 
@@ -65,14 +64,13 @@ class Certificate(db.Model):
     client_contact_phone = db.Column(db.String(20), nullable=True)
     client_contact_email = db.Column(db.String(120), nullable=True)
     
-    # Mirror the filename from Upload for convenience
     filename = db.Column(db.String(256), nullable=False)
     status = db.Column(db.String(20), default='pending')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Correct bidirectional relationship
+  
     upload = db.relationship("Upload", back_populates="certificate")
-    # Using a simpler backref to avoid collision with the 'owner' defined in User
+
     user = db.relationship('User', overlaps="certificates,owner")
 
 class TCILCertificate(db.Model):

@@ -8,13 +8,13 @@ import Dashboard from './pages/Dashboard';
 import UploadPage from './pages/UploadPage';
 import CertificateDetails from './pages/CertificateDetails';
 import RegisterPage from './pages/RegisterPage';
-import ManagerTCILCertificates from './pages/ManagerTCILCertificates';
+import TCILCertificates from './pages/TCILCertificates';
 import EditCertificateForm from './pages/EditCertificateForm';
 import TCILUploadForm from './pages/TCILUploadForm';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import Home from './pages/Home';
-import ManagerDashboard from './components/ManagerDashboard';
+
 
 function App() {
   return (
@@ -76,20 +76,11 @@ function App() {
             }
           />
 
-          {/* Manager-Only Restricted Routes */}
           <Route
-            path="/manager/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={["manager", "admin"]}>
-                <ManagerDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/manager/tcil-certificates"
+            path="/tcil-repository"
             element={
               <ProtectedRoute>
-                <ManagerTCILCertificates />
+                <TCILCertificates />
               </ProtectedRoute>
             }
           />

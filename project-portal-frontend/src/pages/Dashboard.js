@@ -4,6 +4,7 @@ import api from '../api/axios';
 import * as XLSX from 'xlsx';
 import '../styles/dashboard.css';
 
+
 function Dashboard() {
   const [certificates, setCertificates] = useState([]);
   const [role] = useState(localStorage.getItem('userRole') || ''); 
@@ -117,7 +118,7 @@ function Dashboard() {
           <Link to="/register" className="btn btn-primary shadow-sm">+ Register New User</Link>
         )}
       </div>
-
+   
       <div className="filter-panel d-flex flex-wrap gap-3 mb-4 p-3 bg-light rounded shadow-sm">
         <div className="flex-grow-1">
           <label className="form-label fw-bold">Search</label>

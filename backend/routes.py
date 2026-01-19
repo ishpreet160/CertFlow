@@ -259,8 +259,8 @@ def send_async_email(app, message_data):
             from_email=sender,
             to_emails=message_data['to'],
             subject=message_data['subject'],
-            plain_text_content=message_data['body']
-        )
+            html_content=message_data['html'] # Change from plain_text to html_content [cite: 2026-01-07]
+)
        
         try:
             sg = SendGridAPIClient(app.config.get('SENDGRID_API_KEY'))
@@ -278,18 +278,32 @@ def forgot_password():
         token = create_access_token(
             identity=str(user.id), 
             expires_delta=timedelta(hours=1),
-            additional_claims={"type": "password_reset"} # Matches your reset_password check
+            additional_claims={"type": "password_reset"}
         )
         
         link = f"https://tcil-frontend.onrender.com/reset-password/{token}"
         msg_data = {
             "to": user.email,
-            "subject": "CertFlow -Reset Your Password",
-            "body": f"Click the link to reset your password: {link}"
+            "subject": "Reset Your CertFlow Password",
+            "html": f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px; max-width: 500px;">
+                    <h2 style="color: #007bff;">CertFlow</h2>
+                    <h3>Password Reset Request</h3>
+                    <p>We received a request to reset your password. Click the button below to proceed:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{link}" style="background: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Reset Password</a>
+                    </div>
+                    <p style="color: #666; font-size: 12px;">This link will expire in 1 hour. If you did not request this, please ignore this email.</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="color: #999; font-size: 11px;">Trouble with the button? Copy and paste this: {link}</p>
+                </div>
+            """
         }
         
+        # Call the email function ONLY if the user exists
         send_async_email(current_app._get_current_object(), msg_data)
         
+    # Always return 200 to prevent "Email Harvesting" (Security best practice)
     return jsonify(message="If account exists, reset instructions were sent."), 200
 
 @routes_bp.route('/auth/reset-password/<token>', methods=['POST'])
@@ -309,25 +323,55 @@ def reset_password(token):
 def upload_tcil_official():
     user_id = get_jwt_identity()
     
-    file = request.files.get('pdf') # Matches 'pdf' key in your Frontend FormData
+    file = request.files.get('pdf')
     if not file or not file.filename.endswith('.pdf'):
-        return jsonify(message='Only PDF files are allowed for TCIL repository'), 400
+        return jsonify(message='Only PDF files are allowed'), 400
 
     unique_name = f"TCIL_{uuid.uuid4().hex[:6]}_{secure_filename(file.filename)}"
     path = os.path.join(TCIL_FOLDER, unique_name)
     file.save(path)
 
     try:
+       
+        up = Upload(filename=unique_name, filepath=path, user_id=user_id)
+        db.session.add(up)
+        db.session.flush() 
+
+        
         new_tcil = TCILCertificate(
             name=request.form.get('name'),
             valid_from=parse_date(request.form.get('valid_from')),
             valid_till=parse_date(request.form.get('valid_till')),
-            filename=unique_name,
-            uploaded_by=user_id
+            pdf_path=unique_name, 
+            upload_id=up.id
         )
         db.session.add(new_tcil)
         db.session.commit()
         return jsonify(msg="TCIL Certificate published to repository"), 201
     except Exception as e:
         db.session.rollback()
+        if os.path.exists(path): os.remove(path)
         return jsonify(message=str(e)), 500
+
+
+# to get all TCIL certs for the table 
+@routes_bp.route('/tcil/certificates', methods=['GET'])
+@jwt_required()
+def get_all_tcil():
+    # Accessible by everyone 
+    certs = TCILCertificate.query.all()
+    return jsonify({
+        "certificates": [{
+            "id": c.id,
+            "name": c.name,
+            "valid_from": c.valid_from.isoformat() if c.valid_from else None,
+            "valid_till": c.valid_till.isoformat() if c.valid_till else None,
+            "filename": c.pdf_path, # uses pdf_path
+            "uploaded_on": c.upload.timestamp.isoformat() if c.upload else None
+        } for c in certs]
+    }), 200
+
+@routes_bp.route('/tcil/certificates/<string:filename>', methods=['GET'])
+@jwt_required()
+def download_tcil_file(filename):
+    return send_from_directory(TCIL_FOLDER, filename, as_attachment=True)

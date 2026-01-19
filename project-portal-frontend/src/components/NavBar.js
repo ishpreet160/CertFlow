@@ -49,6 +49,14 @@ function NavBar() {
                   Upload TCIL Certificates
                 </Link>
               </li>
+              <li className="nav-item">
+                <Link
+                  className="nav-link text-info fw-bold"
+                  to="/manager/tcil-certificates"
+                >
+                  <i className="bi bi-archive"></i> View Certifications
+                </Link>
+              </li>
 
               <li className="nav-item d-flex align-items-center ms-lg-3 py-2">
                 <span className="navbar-text text-light me-3">
