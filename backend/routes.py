@@ -374,11 +374,37 @@ def get_all_tcil():
             "valid_from": c.valid_from.isoformat() if c.valid_from else None,
             "valid_till": c.valid_till.isoformat() if c.valid_till else None,
             "filename": c.pdf_path, # uses pdf_path
+            "uploaded_by": c.upload.user.name if c.upload and c.upload.user else "System",
             "uploaded_on": c.upload.timestamp.isoformat() if c.upload else None
         } for c in certs]
     }), 200
 
-@routes_bp.route('/tcil/certificates/<string:filename>', methods=['GET'])
+@routes_bp.route('/tcil/certificates/download/<filename>', methods=['GET'])
 @jwt_required()
 def download_tcil_file(filename):
     return send_from_directory(TCIL_FOLDER, filename, as_attachment=True)
+
+@routes_bp.route('/tcil/certificates/<int:cert_id>', methods=['DELETE'])
+@jwt_required()
+def delete_tcil_cert(cert_id):
+    cert = TCILCertificate.query.get_or_404(cert_id)
+    user_id = int(get_jwt_identity())
+    is_admin = get_jwt().get('role') == 'admin'
+    
+    if cert.upload.user_id != user_id and not is_admin:
+        return jsonify(message="You can only delete your own uploads"), 403
+        
+    try:
+        #  Remove file from storage
+        file_path = os.path.join(TCIL_FOLDER, cert.pdf_path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        # database delete
+        db.session.delete(cert)
+        db.session.commit()
+        return jsonify(msg="Reference and file removed successfully"), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(message=f"Error during cleanup: {str(e)}"), 500

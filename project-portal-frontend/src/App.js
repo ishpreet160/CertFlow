@@ -77,7 +77,7 @@ function App() {
           />
 
           <Route
-            path="/tcil-repository"
+            path="/tcil-certificates"
             element={
               <ProtectedRoute>
                 <TCILCertificates />

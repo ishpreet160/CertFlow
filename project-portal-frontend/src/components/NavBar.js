@@ -52,7 +52,7 @@ function NavBar() {
               <li className="nav-item">
                 <Link
                   className="nav-link text-info fw-bold"
-                  to="/manager/tcil-certificates"
+                  to="/tcil-certificates"
                 >
                   <i className="bi bi-archive"></i> View Certifications
                 </Link>
