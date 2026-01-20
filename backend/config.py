@@ -23,11 +23,10 @@ class Config:
    # --- MAILING (SMTP) ---
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 465))
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') == 'True'
-    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL') == 'True'
+    MAIL_USE_TLS = str(os.environ.get('MAIL_USE_TLS', 'False')).lower() == 'true'
+    MAIL_USE_SSL = str(os.environ.get('MAIL_USE_SSL', 'True')).lower() == 'true'
    
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME') 
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') 
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
-
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME')
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
