@@ -38,10 +38,13 @@ function ForgotPasswordPage() {
 
         <form onSubmit={handleReset}>
           <div className="mb-3">
-            <label className="form-label small fw-bold">Email Address</label>
+            <label htmlFor="reset-email" className="form-label small fw-bold">Email Address</label>
             <input
+              id="reset-email"         
+    name="email"
               type="email"
-              className="form-control form-control"
+              autoComplete="email"
+              className="form-control"
               placeholder="name@tcil.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)} 

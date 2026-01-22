@@ -376,8 +376,12 @@ def download_tcil_file(filename):
 @jwt_required()
 def delete_tcil_cert(cert_id):
     cert = TCILCertificate.query.get_or_404(cert_id)
-    user_id = int(get_jwt_identity())
+    user_id = str(get_jwt_identity())
+    uploader_id = str(cert.upload.user_id) if cert.upload else None
     is_admin = get_jwt().get('role') == 'admin'
+
+    if uploader_id != user_id and not is_admin:
+        return jsonify(message="You can only delete your own uploads"), 403
     
     if cert.upload.user_id != user_id and not is_admin:
         return jsonify(message="You can only delete your own uploads"), 403
