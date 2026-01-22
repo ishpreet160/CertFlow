@@ -23,45 +23,59 @@ function ForgotPasswordPage() {
   };
 
   return (
-    <div className="container d-flex align-items-center justify-content-center" style={{ minHeight: "80vh" }}>
-      <div className="card shadow-lg p-4 border-0" style={{ maxWidth: "400px", width: "100%", borderRadius: "15px" }}>
-        <h3 className="text-center fw-bold mb-3 text-primary">Reset Password</h3>
+    <div
+      className="container d-flex align-items-center justify-content-center"
+      style={{ minHeight: "80vh" }}
+    >
+      <div
+        className="card shadow-lg p-4 border-0"
+        style={{ maxWidth: "400px", width: "100%", borderRadius: "15px" }}
+      >
+        <h3 className="text-center fw-bold mb-3 text-primary">
+          Reset Password
+        </h3>
         <p className="text-muted small text-center mb-4">
           Enter your registered email to receive a secure recovery link.
         </p>
 
         {message && (
-          <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-danger'} small text-center`}>
+          <div
+            className={`alert ${message.includes("✅") ? "alert-success" : "alert-danger"} small text-center`}
+          >
             {message}
           </div>
         )}
 
         <form onSubmit={handleReset}>
           <div className="mb-3">
-            <label htmlFor="reset-email" className="form-label small fw-bold">Email Address</label>
+            <label htmlFor="reset-email" className="form-label small fw-bold">
+              Email Address
+            </label>
             <input
-              id="reset-email"         
-    name="email"
+              id="reset-email"
+              name="email"
               type="email"
               autoComplete="email"
               className="form-control"
               placeholder="name@tcil.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             className="btn btn-primary btn-lg w-100 fw-bold shadow-sm"
             disabled={loading}
           >
-            {loading ? 'SENDING...' : 'SEND RESET LINK'}
+            {loading ? "SENDING..." : "SEND RESET LINK"}
           </button>
         </form>
-        
+
         <div className="text-center mt-4">
-          <a href="/login" className="text-decoration-none small fw-bold">Back to Login</a>
+          <a href="/login" className="text-decoration-none small fw-bold">
+            Back to Login
+          </a>
         </div>
       </div>
     </div>
