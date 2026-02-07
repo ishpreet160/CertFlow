@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import api from '../api/axios';
+import { useNavigate } from 'react-router-dom';
 
 function UploadPage() {
+  const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,45 +16,42 @@ function UploadPage() {
     client_contact_phone: '', client_contact_email: '',
   });
 
-  // FIXED: The missing handleChange function
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // FIXED: The missing handleFileChange function
   const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0]);
+    const file = e.target.files[0];
+    if (file && file.size > 5 * 1024 * 1024) { // 5MB Limit
+        alert("File is too large. Please upload a PDF under 5MB.");
+        e.target.value = null;
+        return;
+    }
+    setSelectedFile(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFile) {
-      setMessage('❗ Please select a PDF file.');
+      setMessage('❗ Please select a project document (PDF).');
       return;
     }
 
     setLoading(true);
+    setMessage('⏳ Uploading to cloud storage...');
+
     try {
       const data = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
-        data.append(key, value);
+        data.append(key, value || ''); // Ensure no nulls are sent
       });
       data.append('file', selectedFile);
 
-      // Axios handles the Multipart headers and Token automatically
       await api.post('/certificates', data);
 
-      setMessage('✅ Certificate uploaded successfully!');
-      // Reset Form
-      setFormData({
-        title: '', client: '', nature_of_project: '', sub_nature_of_project: '',
-        start_date: '', go_live_date: '', end_date: '', warranty_years: '',
-        om_years: '', value: '', project_status: '', tcil_contact_person: '',
-        technologies: '', concerned_hod: '', client_contact_name: '',
-        client_contact_phone: '', client_contact_email: '',
-      });
-      setSelectedFile(null);
+      setMessage('✅ Success! Project submitted for approval.');
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error) {
       const backendMsg = error.response?.data?.message || "Upload failed";
       setMessage(`❌ ${backendMsg}`);
@@ -60,7 +59,6 @@ function UploadPage() {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mt-4 mb-5">
       <h2 className="text-center text-primary mb-4">Upload Project Experience</h2>

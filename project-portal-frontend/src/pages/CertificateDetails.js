@@ -41,30 +41,25 @@ function CertificateDetails() {
     }
   };
 
-  const handlePreview = async () => {
-    try {
-      const response = await api.get(`/certificates/${id}/file`, { responseType: 'blob' });
-      const url = URL.createObjectURL(response.data);
-      window.open(url, '_blank');
-    } catch (err) {
-      alert('Cannot preview file.');
-    }
-  };
+const handlePreview = () => {
+  if (cert.filename) {
+    // Open the Supabase Public URL directly in a new tab
+    window.open(cert.filename, '_blank', 'noopener,noreferrer');
+  } else {
+    alert("No file URL found.");
+  }
+};
 
-  const handleDownload = async () => {
-    try {
-      const response = await api.get(`/certificates/${id}/download`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(response.data);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `certificate_${cert.title || id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      alert("Download failed.");
-    }
-  };
+ const handleDownload = () => {
+  // Force download by creating an anchor tag
+  const link = document.createElement('a');
+  link.href = cert.filename;
+  link.setAttribute('download', `Certificate_${cert.id}.pdf`);
+  link.target = "_blank";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+};
 
   if (msg) return <div className="container mt-5 alert alert-danger text-center">{msg}</div>;
   if (loading) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
