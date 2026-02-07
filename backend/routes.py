@@ -200,8 +200,9 @@ def get_all_tcil():
             "name": c.name,
             "valid_from": c.valid_from.isoformat() if c.valid_from else None,
             "valid_till": c.valid_till.isoformat() if c.valid_till else None,
-            "filename": c.pdf_path, 
-            "uploaded_by": c.upload.user.name if c.upload else "System"
+            "filename": c.pdf_path, # This is the full Supabase URL
+            "uploaded_by": c.upload.user.name if c.upload else "System",
+            "uploader_id": c.upload.user_id if c.upload else None
         } for c in certs]
     }), 200
 

@@ -39,22 +39,14 @@ function TCILCertificates() {
     }
   };
 
-  const handleDownload = async (filename) => {
-    try {
-      const res = await api.get(`/tcil/certificates/download/${filename}`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url); // Clean up memory
-    } catch (err) {
-      alert("Download failed. The file might be missing on the server.");
-    }
+ const handleDownload = (url, name) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", name);
+    link.setAttribute("target", "_blank");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   if (loading)
@@ -98,16 +90,23 @@ function TCILCertificates() {
                   <td>{new Date(cert.valid_till).toLocaleDateString()}</td>
                   <td className="text-center">
                     <div className="btn-group">
+                      <a 
+                        href={cert.filename} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-sm btn-outline-primary"
+                      >
+                        <i className="bi bi-eye"></i>
+                      </a>
                       <button
-                        onClick={() => handleDownload(cert.filename)}
+                        onClick={() => handleDownload(cert.filename, cert.name)}
                         className="btn btn-sm btn-outline-success"
                       >
                         <i className="bi bi-download"></i>
                       </button>
 
                       {/* Show delete only if they own it OR are admin */}
-                      {(Number(cert.uploader_id) == Number(currentUserId) ||
-                        userRole === "admin") && (
+                     {(Number(cert.uploader_id) === Number(currentUserId) || userRole === "admin") && (
                         <button
                           onClick={() => handleDelete(cert.id)}
                           className="btn btn-sm btn-outline-danger"
