@@ -41,16 +41,30 @@ function TCILCertificates() {
     }
   };
 
-  const handleDownload = (url, name) => {
+ const handleDownload = async (fileUrl, fileName) => {
+  try {
+    // 1. Fetch the file data as a blob
+    const response = await fetch(fileUrl);
+    const blob = await response.blob();
+    
+    // 2. Create a local object URL for the blob
+    const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", name);
-    link.setAttribute("target", "_blank");
+    
+    // 3. Force download attribute
+    link.setAttribute("download", fileName || "document.pdf");
     document.body.appendChild(link);
     link.click();
+    
+    // 4. Cleanup
     link.remove();
-  };
-
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    // Fallback: If blob fetch fails (CORS), open in new tab
+    window.open(fileUrl, "_blank");
+  }
+};
   if (loading)
     return (
       <div className="text-center mt-5">

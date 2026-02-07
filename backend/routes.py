@@ -273,3 +273,19 @@ def reset_password(token):
 def get_managers():
     managers = User.query.filter(User.role.in_(['manager', 'admin'])).all()
     return jsonify([{"id": m.id, "name": m.name, "role": m.role} for m in managers]), 200
+
+@routes_bp.route('/certificates/<int:cert_id>', methods=['GET'])
+@jwt_required()
+def get_certificate_by_id(cert_id):
+    cert = Certificate.query.get_or_404(cert_id)
+    return jsonify({
+        "id": cert.id,
+        "title": cert.title,
+        "client": cert.client,
+        "nature_of_project": cert.nature_of_project,
+        "sub_nature_of_project": cert.sub_nature_of_project,
+        "start_date": cert.start_date.isoformat() if cert.start_date else None,
+        "end_date": cert.end_date.isoformat() if cert.end_date else None,
+        "filename": cert.filename, # This is the Supabase URL
+        "status": cert.status
+    }), 200

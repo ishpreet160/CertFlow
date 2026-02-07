@@ -21,19 +21,14 @@ function App() {
       <NavBar />
       <main className="flex-grow-1 d-flex flex-column justify-content-center">
         <Routes>
-          <Route path="/register" element={<RegisterPage />} />
-
+          {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<LoginPage />} />
-
-          {/* Public Password Recovery Routes */}
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route
-            path="/reset-password/:token"
-            element={<ResetPasswordPage />}
-          />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
-          {/* Standard Protected Routes */}
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -58,6 +53,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
+          {/* CRITICAL: Ensure this matches the link in Dashboard.js */}
           <Route
             path="/certificate/:id"
             element={
@@ -66,6 +63,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
           <Route
             path="/certificates/edit/:id"
             element={
@@ -83,6 +81,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </main>

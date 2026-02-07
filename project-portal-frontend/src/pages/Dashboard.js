@@ -55,21 +55,35 @@ function Dashboard() {
 
   const handlePreview = (url) => {
     if (!url) return alert("File URL not found.");
-    // Since it's a Supabase Public URL, we just open it
+
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-const handleDownload = (url, title) => {
-    if (!url) return alert("File URL not found.");
-    // We create a temporary link to force the browser to download the cloud file
+const handleDownload = async (fileUrl, title) => {
+  if (!fileUrl) return alert("File URL not found.");
+  
+  try {
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error('Network response was not ok');
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `${title || 'certificate'}.pdf`);
-    link.setAttribute('target', '_blank'); // Ensures it works across browsers
     document.body.appendChild(link);
     link.click();
+    
+    // Cleanup
     link.remove();
-  };
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download failed:", err);
+    // Fallback if fetch is blocked by strict CORS
+    window.open(fileUrl, '_blank');
+  }
+};
 
   const exportToExcel = (dataToExport, fileName) => {
     const worksheet = XLSX.utils.json_to_sheet(

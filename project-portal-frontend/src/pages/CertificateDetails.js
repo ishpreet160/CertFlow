@@ -5,8 +5,6 @@ import api from '../api/axios';
 function CertificateDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  // Get role from storage
   const role = localStorage.getItem('userRole');
   
   const [cert, setCert] = useState(null);
@@ -17,7 +15,6 @@ function CertificateDetails() {
     const fetchCert = async () => {
       try {
         setLoading(true);
-        // Interceptor handles the 'Authorization' header automatically now.
         const res = await api.get(`/certificates/${id}`);
         setCert(res.data);
       } catch (err) {
@@ -27,7 +24,6 @@ function CertificateDetails() {
         setLoading(false);
       }
     };
-
     fetchCert();
   }, [id]);
 
@@ -41,25 +37,33 @@ function CertificateDetails() {
     }
   };
 
-const handlePreview = () => {
-  if (cert.filename) {
-    // Open the Supabase Public URL directly in a new tab
-    window.open(cert.filename, '_blank', 'noopener,noreferrer');
-  } else {
-    alert("No file URL found.");
-  }
-};
+  const handlePreview = () => {
+    if (cert?.filename) {
+      window.open(cert.filename, '_blank', 'noopener,noreferrer');
+    } else {
+      alert("No file URL found.");
+    }
+  };
 
- const handleDownload = () => {
-  // Force download by creating an anchor tag
-  const link = document.createElement('a');
-  link.href = cert.filename;
-  link.setAttribute('download', `Certificate_${cert.id}.pdf`);
-  link.target = "_blank";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-};
+  // FORCED DOWNLOAD LOGIC (Blob method)
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(cert.filename);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${cert.title || 'Certificate'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed", err);
+      // Fallback to preview if fetch fails
+      window.open(cert.filename, '_blank');
+    }
+  };
 
   if (msg) return <div className="container mt-5 alert alert-danger text-center">{msg}</div>;
   if (loading) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
@@ -85,9 +89,13 @@ const handlePreview = () => {
           <label className="text-muted small text-uppercase fw-bold">Client</label>
           <p className="fs-5">{cert.client}</p>
         </div>
-        <div className="col-12">
-          <label className="text-muted small text-uppercase fw-bold">Technologies</label>
-          <p className="border-start ps-3 py-1 bg-light">{cert.technologies || 'No technologies listed'}</p>
+        <div className="col-md-6">
+          <label className="text-muted small text-uppercase fw-bold">Nature of Project</label>
+          <p className="fs-6">{cert.nature_of_project || '—'}</p>
+        </div>
+        <div className="col-md-6">
+          <label className="text-muted small text-uppercase fw-bold">Sub-Nature</label>
+          <p className="fs-6">{cert.sub_nature_of_project || '—'}</p>
         </div>
         <div className="col-md-4">
           <label className="text-muted small text-uppercase fw-bold">Start Date</label>
@@ -121,7 +129,8 @@ const handlePreview = () => {
         <button className="btn btn-link text-decoration-none p-0" onClick={() => navigate('/dashboard')}>
           ← Back to Dashboard
         </button>
-        <small className="text-muted">Uploaded: {new Date(cert.created_at).toLocaleString()}</small>
+   
+        <small className="text-muted">ID: {cert.id} | System Record</small>
       </div>
     </div>
   );
