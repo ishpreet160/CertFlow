@@ -4,13 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 function NavBar() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  
   const role = localStorage.getItem("userRole"); 
   const userName = localStorage.getItem("userName");
 
   const handleLogout = () => {
-    localStorage.clear(); // Clear everything to prevent session bleeding
-    window.location.href = "/login"; // Force fresh state
+    localStorage.clear();
+    window.location.href = "/login";
   };
 
   return (
@@ -32,25 +31,17 @@ function NavBar() {
         <ul className="navbar-nav ms-auto align-items-center">
           {token ? (
             <>
-              {/* Logged In Links */}
               <li className="nav-item">
-                <Link className="nav-link" to="/dashboard">
-                  Dashboard
-                </Link>
+                <Link className="nav-link" to="/dashboard">Dashboard</Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link" to="/upload">
-                  Upload Project Experience
-                </Link>
-              </li>
-
-              <li className="nav-item">
-                <Link className="nav-link" to="/tcil-upload">
-                  Upload TCIL Certificates
-                </Link>
+                <Link className="nav-link" to="/upload">Upload Experience</Link>
               </li>
               <li className="nav-item">
-            
+                <Link className="nav-link" to="/tcil-upload">Upload TCIL</Link>
+              </li>
+              <li className="nav-item">
+                {/* FIXED: This now matches the updated App.js route */}
                 <Link className="nav-link" to="/tcil-repository">
                   View Certifications
                 </Link>
@@ -72,17 +63,11 @@ function NavBar() {
             </>
           ) : (
             <>
-              {/* Logged Out Links - Crucial for Homepage */}
               <li className="nav-item">
-                <Link className="nav-link" to="/login">
-                  Login
-                </Link>
+                <Link className="nav-link" to="/login">Login</Link>
               </li>
               <li className="nav-item">
-                <Link
-                  className="nav-link btn btn-primary text-white ms-2"
-                  to="/register"
-                >
+                <Link className="nav-link btn btn-primary text-white ms-2 px-3" to="/register">
                   Join CertFlow
                 </Link>
               </li>

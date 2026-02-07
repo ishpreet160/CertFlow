@@ -1,20 +1,19 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import NavBar from './components/NavBar';
-import ProtectedRoute from './ProtectedRoute';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import UploadPage from './pages/UploadPage';
-import CertificateDetails from './pages/CertificateDetails';
-import RegisterPage from './pages/RegisterPage';
-import TCILCertificates from './pages/TCILCertificates';
-import EditCertificateForm from './pages/EditCertificateForm';
-import TCILUploadForm from './pages/TCILUploadForm';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import Home from './pages/Home';
-
+import NavBar from "./components/NavBar";
+import ProtectedRoute from "./ProtectedRoute";
+import LoginPage from "./pages/LoginPage";
+import Dashboard from "./pages/Dashboard";
+import UploadPage from "./pages/UploadPage";
+import CertificateDetails from "./pages/CertificateDetails";
+import RegisterPage from "./pages/RegisterPage";
+import TCILCertificates from "./pages/TCILCertificates";
+import EditCertificateForm from "./pages/EditCertificateForm";
+import TCILUploadForm from "./pages/TCILUploadForm";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import Home from "./pages/Home";
 
 function App() {
   return (
@@ -77,7 +76,7 @@ function App() {
           />
 
           <Route
-            path="/tcil-certificates"
+            path="/tcil-repository"
             element={
               <ProtectedRoute>
                 <TCILCertificates />
