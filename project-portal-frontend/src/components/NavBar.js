@@ -50,11 +50,9 @@ function NavBar() {
                 </Link>
               </li>
               <li className="nav-item">
-                <Link
-                  className="nav-link text-info fw-bold"
-                  to="/tcil-certificates"
-                >
-                  <i className="bi bi-archive"></i> View Certifications
+            
+                <Link className="nav-link" to="/tcil-repository">
+                  View Certifications
                 </Link>
               </li>
 
