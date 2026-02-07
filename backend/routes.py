@@ -278,6 +278,7 @@ def get_managers():
 @jwt_required()
 def get_certificate_by_id(cert_id):
     cert = Certificate.query.get_or_404(cert_id)
+    # Ensure all fields sent from UploadPage are included in the response
     return jsonify({
         "id": cert.id,
         "title": cert.title,
@@ -286,6 +287,10 @@ def get_certificate_by_id(cert_id):
         "sub_nature_of_project": cert.sub_nature_of_project,
         "start_date": cert.start_date.isoformat() if cert.start_date else None,
         "end_date": cert.end_date.isoformat() if cert.end_date else None,
-        "filename": cert.filename, # This is the Supabase URL
-        "status": cert.status
+        "go_live_date": cert.go_live_date.isoformat() if cert.go_live_date else None,
+        "value": cert.value,  # This fixes your visibility issue
+        "technologies": cert.technologies, 
+        "filename": cert.filename, # Supabase URL
+        "status": cert.status,
+        "timestamp": cert.timestamp.isoformat() if cert.timestamp else None
     }), 200
